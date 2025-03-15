@@ -1,9 +1,8 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Calendar, Sprout, Thermometer } from "lucide-react";
+import { Calendar, Sprout, Thermometer, Image } from "lucide-react";
 
 interface GrowCardProps {
   id: string;
@@ -16,6 +15,7 @@ interface GrowCardProps {
   humidity: number;
   lastUpdated: string;
   progress: number;
+  imageUrl?: string;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -31,6 +31,7 @@ export function GrowCard({
   humidity,
   lastUpdated,
   progress,
+  imageUrl,
   className,
   style,
 }: GrowCardProps) {
@@ -75,6 +76,16 @@ export function GrowCard({
             style={{ width: `${progress}%` }} 
           />
         </div>
+        {imageUrl && (
+          <div className="h-32 w-full overflow-hidden">
+            <img 
+              src={imageUrl} 
+              alt={name} 
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        )}
         <CardContent className="p-5">
           <div className="flex items-start justify-between">
             <div>

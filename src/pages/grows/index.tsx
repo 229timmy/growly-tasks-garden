@@ -98,60 +98,71 @@ export default function Grows() {
 // Separated component to handle data fetching and rendering
 function GrowsContent({ search }: { search: string }) {
   const { data: grows, isLoading: isLoadingGrows } = useQuery({
-    queryKey: ['grows'],
+    queryKey: ["grows"],
     queryFn: () => growsService.listGrows(),
   });
 
   // Fetch stats for each grow
-  const growStats = useQueries({
-    queries: (grows || []).map((grow) => ({
-      queryKey: ['grow-stats', grow.id],
+  const growStatsQueries = useQueries({
+    queries: (grows || []).map(grow => ({
+      queryKey: ["grow-stats", grow.id],
       queryFn: () => growsService.getGrowStats(grow.id),
-      enabled: !!grow.id,
+      enabled: !!grows,
     })),
   });
 
-  // Fetch latest environmental data for each grow
-  const environmentalData = useQueries({
-    queries: (grows || []).map((grow) => ({
-      queryKey: ['environmental-latest', grow.id],
-      queryFn: async () => {
-        try {
-          return await environmentalService.getLatestEnvironmentalData(grow.id);
-        } catch (error) {
-          console.log(`No environmental data for grow ${grow.id}`);
-          return null;
-        }
-      },
-      enabled: !!grow.id,
-      retry: false, // Don't retry if it fails - missing data is expected
-      staleTime: 1000 * 60 * 5, // 5 minutes
+  // Fetch environmental data for each grow
+  const envDataQueries = useQueries({
+    queries: (grows || []).map(grow => ({
+      queryKey: ["env-data", grow.id],
+      queryFn: () => environmentalService.getLatestEnvironmentalData(grow.id),
+      enabled: !!grows,
     })),
   });
 
+  // Fetch latest photo for each grow
+  const photoQueries = useQueries({
+    queries: (grows || []).map(grow => ({
+      queryKey: ["grow-photo", grow.id],
+      queryFn: () => growsService.getLatestGrowPhoto(grow.id),
+      enabled: !!grows,
+    })),
+  });
+
+  // Check if any queries are loading
   const isLoading = isLoadingGrows || 
-    growStats.some((query) => query.isLoading) || 
-    environmentalData.some((query) => query.isLoading && !query.isError);  // Don't consider error states as loading
+    growStatsQueries.some(query => query.isLoading) || 
+    envDataQueries.some(query => query.isLoading) ||
+    photoQueries.some(query => query.isLoading);
 
-  // Create maps for easier lookup
-  const statsMap = Object.fromEntries(
-    growStats
-      .filter((stat) => stat.data)
-      .map((stat, index) => [grows?.[index].id, stat.data])
+  // Create a map of grow IDs to stats for easier lookup
+  const statsMap = (grows || []).reduce((acc, grow, index) => {
+    acc[grow.id] = growStatsQueries[index]?.data || null;
+    return acc;
+  }, {} as Record<string, { plantCount: number; activeTasks: number; completedTasks: number } | null>);
+
+  // Create a map of grow IDs to environmental data for easier lookup
+  const envMap = (grows || []).reduce((acc, grow, index) => {
+    acc[grow.id] = envDataQueries[index]?.data || null;
+    return acc;
+  }, {} as Record<string, any>);
+
+  // Create a map of grow IDs to photo URLs for easier lookup
+  const photoMap = (grows || []).reduce((acc, grow, index) => {
+    acc[grow.id] = photoQueries[index]?.data || null;
+    return acc;
+  }, {} as Record<string, string | null>);
+
+  // Filter grows based on search term
+  const filteredGrows = grows?.filter(
+    (grow) =>
+      grow.name.toLowerCase().includes(search.toLowerCase()) ||
+      grow.description?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const envMap = Object.fromEntries(
-    environmentalData
-      .filter((env) => env.data)
-      .map((env, index) => [grows?.[index].id, env.data])
-  );
-
-  const filteredGrows = grows?.filter((grow) =>
-    grow.name.toLowerCase().includes(search.toLowerCase())
-  );
-
+  // Separate active and completed grows
   const activeGrows = filteredGrows?.filter((grow) => !grow.end_date);
-  const completedGrows = filteredGrows?.filter((grow) => grow.end_date);
+  const completedGrows = filteredGrows?.filter((grow) => !!grow.end_date);
 
   // Helper function to get plant count for a grow
   const getPlantCount = (growId: string) => {
@@ -168,6 +179,11 @@ function GrowsContent({ search }: { search: string }) {
       temperature: envData?.temperature || grow?.target_temp_high || 0,
       humidity: envData?.humidity || grow?.target_humidity_high || 0,
     };
+  };
+
+  // Helper function to get the latest photo URL for a grow
+  const getPhotoUrl = (growId: string) => {
+    return photoMap[growId] || null;
   };
 
   // Helper function to calculate days active
@@ -194,6 +210,7 @@ function GrowsContent({ search }: { search: string }) {
         humidity={envData.humidity}
         lastUpdated={grow.updated_at}
         progress={grow.end_date ? 100 : calculateProgress(grow.stage, daysActive)}
+        imageUrl={getPhotoUrl(grow.id)}
       />
     );
   };
