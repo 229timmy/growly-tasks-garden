@@ -1,12 +1,20 @@
 import { APIClient } from './client';
 import type { Database } from '@/types/database';
 import { supabase } from '@/lib/supabase';
+import { ActivitiesService } from './activities';
 
 type Grow = Database['public']['Tables']['grows']['Row'];
 type GrowInsert = Database['public']['Tables']['grows']['Insert'];
 type GrowUpdate = Database['public']['Tables']['grows']['Update'];
 
 export class GrowsService extends APIClient {
+  private activitiesService: ActivitiesService;
+
+  constructor() {
+    super();
+    this.activitiesService = new ActivitiesService();
+  }
+
   async listGrows(filters?: {
     stage?: Grow['stage'];
     limit?: number;
@@ -33,66 +41,82 @@ export class GrowsService extends APIClient {
       query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
     }
     
-    const result = await this.query(() => query);
-    console.log('Grows fetched:', result);
-    return result;
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
   }
 
   async getGrow(id: string): Promise<Grow> {
     const session = await this.requireAuth();
     
-    return this.query(() =>
-      supabase
-        .from('grows')
-        .select('*')
-        .eq('id', id)
-        .eq('user_id', session.user.id)
-        .single()
-    );
+    const { data, error } = await supabase
+      .from('grows')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+      .single();
+    
+    if (error) throw error;
+    if (!data) throw new Error('Grow not found');
+    return data;
   }
 
   async createGrow(data: Omit<GrowInsert, 'user_id'>): Promise<Grow> {
     const session = await this.requireAuth();
     
-    return this.query(() =>
-      supabase
-        .from('grows')
-        .insert({
-          ...data,
-          user_id: session.user.id,
-        })
-        .select()
-        .single()
-    );
+    const { data: grow, error } = await supabase
+      .from('grows')
+      .insert({
+        ...data,
+        user_id: session.user.id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!grow) throw new Error('Failed to create grow');
+
+    // Track the grow creation activity
+    await this.activitiesService.addActivity({
+      type: 'grow_updated',
+      title: 'Grow Created',
+      description: `Created new grow: ${data.name}`,
+      related_grow_id: grow.id,
+    });
+
+    return grow;
   }
 
   async updateGrow(id: string, data: GrowUpdate): Promise<Grow> {
     const session = await this.requireAuth();
     
-    return this.query(() =>
-      supabase
-        .from('grows')
-        .update(data)
-        .eq('id', id)
-        .eq('user_id', session.user.id)
-        .select()
-        .single()
-    );
+    const { data: grow, error } = await supabase
+      .from('grows')
+      .update(data)
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!grow) throw new Error('Grow not found');
+
+    // Track the grow update activity
+    await this.activitiesService.trackGrowUpdated(grow.id, grow.name);
+
+    return grow;
   }
 
   async deleteGrow(id: string): Promise<void> {
     const session = await this.requireAuth();
     
-    type DeleteResponse = null;
-    await this.query<DeleteResponse>(
-      () =>
-        supabase
-          .from('grows')
-          .delete()
-          .eq('id', id)
-          .eq('user_id', session.user.id),
-      false
-    );
+    const { error } = await supabase
+      .from('grows')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id);
+
+    if (error) throw error;
   }
 
   async getGrowStats(id: string): Promise<{
@@ -101,30 +125,25 @@ export class GrowsService extends APIClient {
     completedTasks: number;
   }> {
     const session = await this.requireAuth();
-    
-    type StatsResponse = {
-      plants: Array<{ id: string }>;
-      tasks: Array<{ id: string; completed: boolean }>;
-    };
 
-    const [plants, tasks] = await Promise.all([
-      this.query<Array<{ id: string }>>(
-        () =>
-          supabase
-            .from('plants')
-            .select('id')
-            .eq('grow_id', id)
-            .eq('user_id', session.user.id)
-      ),
-      this.query<Array<{ id: string; completed: boolean }>>(
-        () =>
-          supabase
-            .from('tasks')
-            .select('id, completed')
-            .eq('grow_id', id)
-            .eq('user_id', session.user.id)
-      ),
+    const [plantsResult, tasksResult] = await Promise.all([
+      supabase
+        .from('plants')
+        .select('id')
+        .eq('grow_id', id)
+        .eq('user_id', session.user.id),
+      supabase
+        .from('tasks')
+        .select('id, completed')
+        .eq('grow_id', id)
+        .eq('user_id', session.user.id),
     ]);
+
+    if (plantsResult.error) throw plantsResult.error;
+    if (tasksResult.error) throw tasksResult.error;
+
+    const plants = plantsResult.data || [];
+    const tasks = tasksResult.data || [];
 
     return {
       plantCount: plants.length,
@@ -138,26 +157,55 @@ export class GrowsService extends APIClient {
    */
   async getLatestGrowPhoto(growId: string): Promise<string | null> {
     const session = await this.requireAuth();
+    console.log(`Fetching latest photo for grow ${growId}`);
     
     try {
-      // First get all plants for this grow
-      const { data: plants, error: plantsError } = await supabase
-        .from('plants')
-        .select('id, last_photo_url')
-        .eq('grow_id', growId)
+      // Try a different approach - query plant_photos directly
+      const { data: photos, error: photosError } = await supabase
+        .from('plant_photos')
+        .select('url, plant_id, plants!inner(grow_id)')
+        .eq('plants.grow_id', growId)
         .eq('user_id', session.user.id)
-        .not('last_photo_url', 'is', null)
-        .order('updated_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1);
       
-      if (plantsError) throw plantsError;
+      if (photosError) {
+        console.error(`Error fetching photos for grow ${growId}:`, photosError);
+        
+        // Fall back to the original approach if the join query fails
+        const { data: plants, error: plantsError } = await supabase
+          .from('plants')
+          .select('id, last_photo_url')
+          .eq('grow_id', growId)
+          .eq('user_id', session.user.id)
+          .not('last_photo_url', 'is', null)
+          .order('updated_at', { ascending: false });
+        
+        if (plantsError) {
+          console.error(`Error fetching plants for grow ${growId}:`, plantsError);
+          return null;
+        }
+        
+        console.log(`Found ${plants?.length || 0} plants with photos for grow ${growId}`);
+        
+        if (!plants || plants.length === 0) {
+          console.log(`No plants with photos found for grow ${growId}`);
+          return null;
+        }
+        
+        console.log(`Returning photo URL for grow ${growId} (fallback):`, plants[0].last_photo_url);
+        return plants[0].last_photo_url;
+      }
       
-      // If no plants have photos, return null
-      if (!plants || plants.length === 0) {
+      console.log(`Found ${photos?.length || 0} photos for grow ${growId}`);
+      
+      if (!photos || photos.length === 0) {
+        console.log(`No photos found for grow ${growId}`);
         return null;
       }
       
-      // Return the first plant's last photo URL
-      return plants[0].last_photo_url;
+      console.log(`Returning photo URL for grow ${growId}:`, photos[0].url);
+      return photos[0].url;
     } catch (error) {
       console.error('Failed to get latest grow photo:', error);
       return null;
