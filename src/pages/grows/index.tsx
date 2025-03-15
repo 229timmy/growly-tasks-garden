@@ -11,6 +11,7 @@ import { EnvironmentalService } from '@/lib/api/environmental';
 import type { Grow } from '@/types/common';
 import { GrowCard } from '@/components/dashboard/GrowCard';
 import { CreateGrowDialog } from '@/components/grows/CreateGrowDialog';
+import { QueryErrorBoundary } from '@/components/ui/query-error-boundary';
 
 const growsService = new GrowsService();
 const environmentalService = new EnvironmentalService();
@@ -63,6 +64,39 @@ export default function Grows() {
     "Real-time environmental data will be implemented in a future update."
   );
 
+  return (
+    <div className="container py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Grows</h1>
+        <Button onClick={() => setCreateDialogOpen(true)}>New Grow</Button>
+      </div>
+
+      <div className="flex items-center space-x-4">
+        <Input
+          placeholder="Search grows..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
+
+      <QueryErrorBoundary
+        title="Grow Data Error"
+        description="We couldn't load your grows. Please try again."
+      >
+        <GrowsContent search={search} />
+      </QueryErrorBoundary>
+
+      <CreateGrowDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      />
+    </div>
+  );
+}
+
+// Separated component to handle data fetching and rendering
+function GrowsContent({ search }: { search: string }) {
   const { data: grows, isLoading: isLoadingGrows } = useQuery({
     queryKey: ['grows'],
     queryFn: () => growsService.listGrows(),
@@ -165,102 +199,81 @@ export default function Grows() {
   };
 
   return (
-    <div className="container py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Grows</h1>
-        <Button onClick={() => setCreateDialogOpen(true)}>New Grow</Button>
-      </div>
+    <Tabs defaultValue="active" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="active">Active</TabsTrigger>
+        <TabsTrigger value="completed">Completed</TabsTrigger>
+        <TabsTrigger value="all">All</TabsTrigger>
+      </TabsList>
 
-      <div className="flex items-center space-x-4">
-        <Input
-          placeholder="Search grows..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-      </div>
+      <TabsContent value="active" className="space-y-4">
+        {isLoading ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Loading...</CardTitle>
+            </CardHeader>
+          </Card>
+        ) : activeGrows?.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>No active grows found</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Create a new grow to get started.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {activeGrows?.map(renderGrowCard)}
+          </div>
+        )}
+      </TabsContent>
 
-      <Tabs defaultValue="active" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="all">All</TabsTrigger>
-        </TabsList>
+      <TabsContent value="completed" className="space-y-4">
+        {isLoading ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Loading...</CardTitle>
+            </CardHeader>
+          </Card>
+        ) : completedGrows?.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>No completed grows found</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Complete a grow to see it here.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {completedGrows?.map(renderGrowCard)}
+          </div>
+        )}
+      </TabsContent>
 
-        <TabsContent value="active" className="space-y-4">
-          {isLoading ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Loading...</CardTitle>
-              </CardHeader>
-            </Card>
-          ) : activeGrows?.length === 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>No active grows found</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Create a new grow to get started.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {activeGrows?.map(renderGrowCard)}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="completed" className="space-y-4">
-          {isLoading ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Loading...</CardTitle>
-              </CardHeader>
-            </Card>
-          ) : completedGrows?.length === 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>No completed grows found</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Complete a grow to see it here.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {completedGrows?.map(renderGrowCard)}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="all" className="space-y-4">
-          {isLoading ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Loading...</CardTitle>
-              </CardHeader>
-            </Card>
-          ) : filteredGrows?.length === 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>No grows found</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Create a new grow to get started.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredGrows?.map(renderGrowCard)}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      <CreateGrowDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-      />
-    </div>
+      <TabsContent value="all" className="space-y-4">
+        {isLoading ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Loading...</CardTitle>
+            </CardHeader>
+          </Card>
+        ) : filteredGrows?.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>No grows found</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Create a new grow to get started.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredGrows?.map(renderGrowCard)}
+          </div>
+        )}
+      </TabsContent>
+    </Tabs>
   );
 } 

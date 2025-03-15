@@ -51,6 +51,12 @@
 - ✅ Real environmental data display in GrowCards
 - ✅ Fallback to target values when real data is unavailable
 
+#### 8. Error Handling
+- ✅ Reusable ErrorBoundary component
+- ✅ Specialized QueryErrorBoundary for API errors
+- ✅ Error boundary integration with React Query
+- ✅ Implemented in Grows page
+
 ### 🚧 In Progress Features
 
 #### 1. Environmental Data
@@ -96,7 +102,7 @@
 
 1. ✅ Create seed data for environmental readings to test visualization
 2. ✅ Re-enable environmental data display in the grows page
-3. Implement proper error boundaries for API requests
+3. ✅ Implement proper error boundaries for API requests
 4. Complete the Plants management pages
 
 ## Technology Stack
