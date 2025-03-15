@@ -3,7 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Calendar, Plant, Thermometer } from "lucide-react";
+import { Calendar, Sprout, Thermometer } from "lucide-react";
 
 interface GrowCardProps {
   id: string;
@@ -17,6 +17,7 @@ interface GrowCardProps {
   lastUpdated: string;
   progress: number;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export function GrowCard({
@@ -31,6 +32,7 @@ export function GrowCard({
   lastUpdated,
   progress,
   className,
+  style,
 }: GrowCardProps) {
   // Stage colors
   const stageColors = {
@@ -65,6 +67,7 @@ export function GrowCard({
           "overflow-hidden transition-all cursor-pointer card-hover",
           className
         )}
+        style={style}
       >
         <div className="h-2 bg-muted">
           <div 
@@ -97,7 +100,7 @@ export function GrowCard({
                 <span>{formatDate(startDate)}</span>
               </div>
               <div className="flex items-center text-sm text-muted-foreground">
-                <Plant className="h-3.5 w-3.5 mr-1" />
+                <Sprout className="h-3.5 w-3.5 mr-1" />
                 <span>{plantCount} plants</span>
               </div>
             </div>

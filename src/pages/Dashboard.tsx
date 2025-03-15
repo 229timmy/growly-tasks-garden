@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -67,7 +66,7 @@ const tasks = [
     isCompleted: false,
     type: "water",
     relatedTo: {
-      type: "grow",
+      type: "grow" as const,
       name: "Northern Lights",
       id: "grow-1",
     },
@@ -81,7 +80,7 @@ const tasks = [
     isCompleted: false,
     type: "feed",
     relatedTo: {
-      type: "grow",
+      type: "grow" as const,
       name: "Blue Dream",
       id: "grow-2",
     },
@@ -94,7 +93,7 @@ const tasks = [
     isCompleted: true,
     type: "trim",
     relatedTo: {
-      type: "grow",
+      type: "grow" as const,
       name: "White Widow",
       id: "grow-3",
     },
@@ -201,7 +200,6 @@ const Dashboard = () => {
             text: "vs last month",
           }}
           className="animate-fade-in"
-          style={{ animationDelay: "100ms" }}
         />
         <StatsCard
           title="Total Plants"
@@ -214,7 +212,6 @@ const Dashboard = () => {
             text: "vs last month",
           }}
           className="animate-fade-in"
-          style={{ animationDelay: "150ms" }}
         />
         <StatsCard
           title="Avg. Temperature"
@@ -229,7 +226,6 @@ const Dashboard = () => {
             text: "vs yesterday",
           }}
           className="animate-fade-in"
-          style={{ animationDelay: "200ms" }}
         />
         <StatsCard
           title="Active Tasks"
@@ -242,12 +238,11 @@ const Dashboard = () => {
             text: "vs last week",
           }}
           className="animate-fade-in"
-          style={{ animationDelay: "250ms" }}
         />
       </div>
       
       <div className="grid gap-6 lg:grid-cols-2 mb-6">
-        <Card className="animate-fade-in" style={{ animationDelay: "300ms" }}>
+        <Card className="animate-fade-in">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle>Your Grows</CardTitle>
@@ -307,7 +302,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card className="animate-fade-in" style={{ animationDelay: "400ms" }}>
+        <Card className="animate-fade-in">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle>Tasks</CardTitle>
@@ -378,14 +373,14 @@ const Dashboard = () => {
         </Card>
       </div>
       
-      <div className="mb-6 animate-fade-in" style={{ animationDelay: "500ms" }}>
+      <div className="mb-6 animate-fade-in">
         <AnalyticsChart 
           title="Grow Analytics" 
           data={chartData} 
         />
       </div>
       
-      <div className="animate-fade-in" style={{ animationDelay: "600ms" }}>
+      <div className="animate-fade-in">
         <Card className="bg-grow-50 border-grow-100">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">

@@ -15,6 +15,7 @@ interface StatsCardProps {
     text?: string;
   };
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export function StatsCard({
@@ -24,6 +25,7 @@ export function StatsCard({
   icon,
   change,
   className,
+  style,
 }: StatsCardProps) {
   const trendIcon = {
     up: <ChevronUp className="h-4 w-4 text-grow-600" />,
@@ -38,7 +40,7 @@ export function StatsCard({
   };
 
   return (
-    <Card className={cn("transition-all hover:border-primary/20", className)}>
+    <Card className={cn("transition-all hover:border-primary/20", className)} style={style}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}

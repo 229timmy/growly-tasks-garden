@@ -1,6 +1,5 @@
-
 import React from "react";
-import { Clock, Droplet, Plant } from "lucide-react";
+import { Clock, Droplet, Sprout } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +91,7 @@ export function TaskItem({
     const due = new Date(dueDate);
     return !isCompleted && due < today;
   };
-
+  
   return (
     <div 
       className={cn(
@@ -160,7 +159,7 @@ export function TaskItem({
                   <path d="M12 2L4 6V12C4 15.31 7.58 20 12 22C16.42 20 20 15.31 20 12V6L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               ) : (
-                <Plant className="h-3.5 w-3.5 text-grow-500" />
+                <Sprout className="h-3.5 w-3.5 text-grow-500" />
               )}
               <span className="text-xs text-muted-foreground">
                 {relatedTo.name}
