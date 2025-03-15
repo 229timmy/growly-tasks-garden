@@ -14,19 +14,17 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
   };
 
   return (
-    <div className={theme}>
-      <div className="min-h-screen bg-background">
-        <Sidebar isOpen={isSidebarOpen} />
-        <div
-          className={`transition-all duration-300 ease-in-out ${
-            isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
-          }`}
-        >
-          <Header isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <main className="px-4 sm:px-6 lg:px-8 pt-24 pb-8 min-h-screen">
-            {children || <Outlet />}
-          </main>
-        </div>
+    <div className="min-h-screen bg-background">
+      <Sidebar isOpen={isSidebarOpen} />
+      <div
+        className={`transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
+        }`}
+      >
+        <Header isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+        <main className="px-4 sm:px-6 lg:px-8 pt-24 pb-8 min-h-screen">
+          {children || <Outlet />}
+        </main>
       </div>
     </div>
   );

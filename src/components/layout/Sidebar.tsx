@@ -8,7 +8,6 @@ import {
   CheckSquare, 
   BarChart3, 
   Settings,
-  Users,
   HelpCircle
 } from "lucide-react";
 
@@ -66,11 +65,6 @@ export function Sidebar({ isOpen }: SidebarProps) {
       href: "/settings"
     },
     {
-      label: "Team",
-      icon: <Users className="h-5 w-5" />,
-      href: "/team"
-    },
-    {
       label: "Help",
       icon: <HelpCircle className="h-5 w-5" />,
       href: "/help"
@@ -80,7 +74,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-background transition-all duration-300 ease-in-out",
+        "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-sidebar transition-all duration-300 ease-in-out",
         isOpen ? "w-64" : "w-20"
       )}
     >
