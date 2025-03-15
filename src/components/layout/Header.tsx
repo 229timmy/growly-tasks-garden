@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import ThemeToggle from "../ThemeToggle";
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -62,6 +63,8 @@ export function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
         </div>
         
         <div className="flex items-center gap-2">
+          <ThemeToggle />
+          
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
