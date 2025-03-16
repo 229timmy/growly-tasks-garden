@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
@@ -10,10 +10,30 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { theme } = useTheme();
   const isMobile = useIsMobile();
+  // Add tablet detection
+  const [isTablet, setIsTablet] = useState(false);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  // Handle tablet detection
+  useEffect(() => {
+    const checkTablet = () => {
+      // Define tablet range (between 768px and 1024px)
+      const isTabletSize = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsTablet(isTabletSize);
+    };
+    
+    // Check initially
+    checkTablet();
+    
+    // Add event listener
+    window.addEventListener('resize', checkTablet);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkTablet);
+  }, []);
 
   // Close sidebar by default on mobile
   React.useEffect(() => {
@@ -22,15 +42,26 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
     }
   }, [isMobile]);
 
+  // Close sidebar by default on tablet too
+  React.useEffect(() => {
+    if (isTablet) {
+      setIsSidebarOpen(false);
+    }
+  }, [isTablet]);
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div
         className={cn(
           "transition-all duration-300 ease-in-out",
+          // Desktop layout (large screens)
           isSidebarOpen ? "lg:ml-64" : "lg:ml-20",
-          // Don't add margin on mobile
-          isMobile && "ml-0"
+          // Tablet layout (md screens)
+          isTablet && isSidebarOpen && "md:ml-64",
+          isTablet && !isSidebarOpen && "md:ml-20",
+          // Mobile layout (sm screens)
+          (isMobile || isTablet) && !isSidebarOpen && "ml-0"
         )}
       >
         <Header isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />

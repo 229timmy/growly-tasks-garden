@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
@@ -27,6 +27,25 @@ interface NavItem {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const isMobile = useIsMobile();
+  const [isTablet, setIsTablet] = useState(false);
+  
+  // Handle tablet detection
+  useEffect(() => {
+    const checkTablet = () => {
+      // Define tablet range (between 768px and 1024px)
+      const isTabletSize = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsTablet(isTabletSize);
+    };
+    
+    // Check initially
+    checkTablet();
+    
+    // Add event listener
+    window.addEventListener('resize', checkTablet);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkTablet);
+  }, []);
   
   const mainNavItems: NavItem[] = [
     {
@@ -77,8 +96,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Backdrop for mobile */}
-      {isMobile && isOpen && (
+      {/* Backdrop for mobile and tablet when sidebar is open */}
+      {(isMobile || isTablet) && isOpen && (
         <div 
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
           onClick={onClose}
@@ -88,10 +107,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-sidebar transition-all duration-300 ease-in-out",
-          isOpen ? "w-64" : "w-20",
-          // Mobile styles
+          // Desktop view
+          isOpen ? "lg:w-64" : "lg:w-20",
+          // Tablet view
+          isTablet && isOpen && "md:w-64",
+          isTablet && !isOpen && "md:w-20 md:-translate-x-full",
+          // Mobile view 
           isMobile && "w-64",
-          isMobile && !isOpen && "-translate-x-full"
+          (isMobile || isTablet) && !isOpen && "-translate-x-full"
         )}
       >
         <div className="flex h-16 items-center justify-between border-b px-4">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Bell, Search, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,25 @@ interface HeaderProps {
 
 export function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  
+  // Handle tablet detection
+  useEffect(() => {
+    const checkTablet = () => {
+      // Define tablet range (between 768px and 1024px)
+      const isTabletSize = window.innerWidth >= 768 && window.innerWidth < 1024;
+      setIsTablet(isTabletSize);
+    };
+    
+    // Check initially
+    checkTablet();
+    
+    // Add event listener
+    window.addEventListener('resize', checkTablet);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkTablet);
+  }, []);
   
   // Handle scroll effect
   useEffect(() => {
@@ -30,8 +48,14 @@ export function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   return (
     <header 
       className={cn(
-        "fixed top-0 right-0 left-0 z-20 transition-all duration-300 ease-in-out",
+        "fixed top-0 z-20 transition-all duration-300 ease-in-out",
+        // Desktop layout
         isSidebarOpen ? "lg:pl-64" : "lg:pl-20",
+        // Tablet layout
+        isTablet && isSidebarOpen && "md:pl-64",
+        isTablet && !isSidebarOpen && "md:pl-20",
+        // Small screen layout - full width
+        "right-0 left-0",
         scrolled ? "py-2 bg-background/80 backdrop-blur-md border-b" : "py-4"
       )}
     >
@@ -40,7 +64,7 @@ export function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
           <Button 
             variant="ghost" 
             size="icon"
-            className="lg:hidden"
+            className="md:flex lg:hidden"
             onClick={toggleSidebar}
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
