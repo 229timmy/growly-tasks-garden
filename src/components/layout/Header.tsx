@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Search, Settings, User } from "lucide-react";
+import { Bell, Search, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "../ThemeToggle";
+import { useAuth } from "@/contexts/auth/AuthContext";
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -16,6 +17,18 @@ interface HeaderProps {
 export function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const { user, signOut } = useAuth();
+  
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!user?.email) return "U";
+    const email = user.email;
+    const nameParts = email.split('@')[0].split('.');
+    if (nameParts.length > 1) {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    }
+    return email.substring(0, 2).toUpperCase();
+  };
   
   // Handle tablet detection
   useEffect(() => {
@@ -98,29 +111,27 @@ export function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="ml-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary/10 text-primary">JD</AvatarFallback>
+                  <AvatarFallback className="bg-primary/10 text-primary">{getUserInitials()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 mt-1 animate-fade-in">
               <div className="px-2 py-1.5 border-b">
-                <p className="text-sm font-medium">John Doe</p>
-                <p className="text-xs text-muted-foreground">john@example.com</p>
+                <p className="text-sm font-medium">Account</p>
+                <p className="text-xs text-muted-foreground">{user?.email || "user@example.com"}</p>
               </div>
-              <DropdownMenuItem asChild>
-                <Link to="/app/profile" className="flex items-center cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link to="/app/settings" className="flex items-center cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                Log out
+              <DropdownMenuItem 
+                className="cursor-pointer text-destructive focus:text-destructive" 
+                onClick={signOut}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
