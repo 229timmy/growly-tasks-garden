@@ -51,17 +51,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     {
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
-      href: "/dashboard"
+      href: "/app/dashboard"
     },
     {
       label: "Grows",
       icon: <Sprout className="h-5 w-5" />,
-      href: "/grows"
+      href: "/app/grows"
     },
     {
       label: "Tasks",
       icon: <CheckSquare className="h-5 w-5" />,
-      href: "/tasks"
+      href: "/app/tasks"
     },
     {
       label: "Plants",
@@ -72,12 +72,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <path d="M15.61 19.5C16.9538 17.5293 18 15.5293 18 13C18 12.1182 17.8042 11.257 17.4234 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         <path d="M8.5 19.5H15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>,
-      href: "/plants"
+      href: "/app/plants"
     },
     {
       label: "Analytics",
       icon: <BarChart3 className="h-5 w-5" />,
-      href: "/analytics"
+      href: "/app/analytics"
     },
   ];
   
@@ -85,12 +85,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     {
       label: "Settings",
       icon: <Settings className="h-5 w-5" />,
-      href: "/settings"
+      href: "/app/settings"
     },
     {
       label: "Help",
       icon: <HelpCircle className="h-5 w-5" />,
-      href: "/help"
+      href: "/app/help"
     }
   ];
 

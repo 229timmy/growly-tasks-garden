@@ -108,13 +108,13 @@ export function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
                 <p className="text-xs text-muted-foreground">john@example.com</p>
               </div>
               <DropdownMenuItem asChild>
-                <Link to="/profile" className="flex items-center cursor-pointer">
+                <Link to="/app/profile" className="flex items-center cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/settings" className="flex items-center cursor-pointer">
+                <Link to="/app/settings" className="flex items-center cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </Link>
