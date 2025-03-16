@@ -10,7 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreatePlantDialog } from '@/components/plants/CreatePlantDialog';
+import { CreateGrowDialog } from '@/components/grows/CreateGrowDialog';
 import { DeleteDialog } from "@/components/ui/delete-dialog";
+import { BatchMeasurementDialog } from '@/components/plants/BatchMeasurementDialog';
 import { GrowsService } from '@/lib/api/grows';
 import { PlantsService } from '@/lib/api/plants';
 import { EnvironmentalService } from '@/lib/api/environmental';
@@ -47,19 +49,19 @@ export default function GrowDetails() {
   const { data: grow, isLoading: isLoadingGrow } = useQuery({
     queryKey: ["grow", id],
     queryFn: () => growsService.getGrow(id as string),
-    enabled: !!id,
+    enabled: !!id && id !== 'new',
   });
 
   const { data: plants = [], isLoading: isLoadingPlants } = useQuery({
     queryKey: ["plants", id],
     queryFn: () => plantsService.listPlants({ growId: id as string }),
-    enabled: !!id,
+    enabled: !!id && id !== 'new',
   });
 
   const { data: environmentData = [], isLoading: isLoadingEnvironment } = useQuery<EnvironmentalData[]>({
     queryKey: ["environment", id],
     queryFn: () => environmentalService.getEnvironmentalData(id as string),
-    enabled: !!id,
+    enabled: !!id && id !== 'new',
   });
 
   // Get the most recent environmental data point
@@ -94,11 +96,23 @@ export default function GrowDetails() {
     try {
       await growsService.deleteGrow(id as string);
       toast.success("Grow deleted successfully");
-      navigate("/grows");
+      navigate("/app/grows");
     } catch (error) {
       toast.error("Failed to delete grow");
     }
   };
+
+  // If we're on the "new" route, show the create dialog
+  if (id === 'new') {
+    return (
+      <CreateGrowDialog
+        open={true}
+        onOpenChange={(open) => {
+          if (!open) navigate('/app/grows');
+        }}
+      />
+    );
+  }
 
   if (isLoadingGrow) {
     return (
@@ -116,7 +130,7 @@ export default function GrowDetails() {
           <CardDescription>This grow could not be found.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => navigate("/grows")}>Back to Grows</Button>
+          <Button onClick={() => navigate("/app/grows")}>Back to Grows</Button>
         </CardContent>
       </Card>
     );
@@ -196,10 +210,13 @@ export default function GrowDetails() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle>Plants</CardTitle>
-          <Button onClick={() => setCreatePlantOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Plant
-          </Button>
+          <div className="flex gap-2">
+            <BatchMeasurementDialog growId={id as string} />
+            <Button onClick={() => setCreatePlantOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Plant
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2 mb-4">
