@@ -1,6 +1,25 @@
 import { APIClient } from './client';
 import type { PlantCareActivity, PlantCareActivityInsert } from '@/types/common';
 import { supabase } from '@/lib/supabase';
+import { addDays, format, subDays } from 'date-fns';
+
+interface CareActivityStats {
+  wateringCount: number;
+  feedingCount: number;
+  totalActivities: number;
+  wateringEffectiveness: number;
+  feedingEffectiveness: number;
+  wateringSchedule: {
+    date: string;
+    count: number;
+    effectiveness: number;
+  }[];
+  feedingSchedule: {
+    date: string;
+    count: number;
+    effectiveness: number;
+  }[];
+}
 
 export class PlantCareService extends APIClient {
   async listActivities(
@@ -134,87 +153,162 @@ export class PlantCareService extends APIClient {
     if (error) throw error;
   }
 
-  async getActivityStats(
-    options?: {
-      plantId?: string;
-      growId?: string;
-      from?: Date;
-      to?: Date;
-    }
-  ): Promise<{
-    totalActivities: number;
-    wateringCount: number;
-    feedingCount: number;
-    topDressingCount: number;
-    otherCount: number;
-    lastWatering?: Date;
-    lastFeeding?: Date;
-    lastTopDressing?: Date;
-  }> {
+  async getActivityStats(days: number = 30): Promise<CareActivityStats> {
     const session = await this.requireAuth();
-    
-    let query = supabase
+    const endDate = new Date();
+    const startDate = subDays(endDate, days);
+
+    // Get watering activities
+    const { data: wateringData, error: wateringError } = await supabase
       .from('plant_care_activities')
       .select('*')
-      .eq('user_id', session.user.id);
-    
-    if (options?.plantId) {
-      query = query.eq('plant_id', options.plantId);
-    }
-    
-    if (options?.growId) {
-      query = query.eq('grow_id', options.growId);
-    }
-    
-    if (options?.from) {
-      query = query.gte('performed_at', options.from.toISOString());
-    }
-    
-    if (options?.to) {
-      query = query.lte('performed_at', options.to.toISOString());
-    }
-    
-    const { data: activities, error } = await query;
-    
-    if (error) throw error;
-    
-    if (!activities || activities.length === 0) {
-      return {
-        totalActivities: 0,
-        wateringCount: 0,
-        feedingCount: 0,
-        topDressingCount: 0,
-        otherCount: 0,
-      };
+      .eq('activity_type', 'watering')
+      .eq('user_id', session.user.id)
+      .gte('performed_at', startDate.toISOString())
+      .lte('performed_at', endDate.toISOString());
+
+    if (wateringError) {
+      throw new Error('Failed to fetch watering activities');
     }
 
-    const wateringActivities = activities.filter(a => a.activity_type === 'watering');
-    const feedingActivities = activities.filter(a => a.activity_type === 'feeding');
-    const topDressingActivities = activities.filter(a => a.activity_type === 'top_dressing');
-    const otherActivities = activities.filter(a => a.activity_type === 'other');
+    // Get feeding activities
+    const { data: feedingData, error: feedingError } = await supabase
+      .from('plant_care_activities')
+      .select('*')
+      .eq('activity_type', 'feeding')
+      .eq('user_id', session.user.id)
+      .gte('performed_at', startDate.toISOString())
+      .lte('performed_at', endDate.toISOString());
 
-    // Sort activities by performed_at in descending order
-    const sortedWatering = [...wateringActivities].sort(
-      (a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime()
-    );
-    
-    const sortedFeeding = [...feedingActivities].sort(
-      (a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime()
-    );
-    
-    const sortedTopDressing = [...topDressingActivities].sort(
-      (a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime()
-    );
+    if (feedingError) {
+      throw new Error('Failed to fetch feeding activities');
+    }
+
+    // Calculate daily stats
+    const wateringSchedule = [];
+    const feedingSchedule = [];
+    let currentDate = startDate;
+
+    while (currentDate <= endDate) {
+      const dateStr = format(currentDate, 'yyyy-MM-dd');
+      
+      // Watering stats for the day
+      const dayWateringActivities = wateringData.filter(
+        activity => format(new Date(activity.performed_at), 'yyyy-MM-dd') === dateStr
+      );
+      const wateringCount = dayWateringActivities.length;
+      const wateringEffectiveness = this.calculateWateringEffectiveness(dayWateringActivities);
+      
+      wateringSchedule.push({
+        date: dateStr,
+        count: wateringCount,
+        effectiveness: wateringEffectiveness,
+      });
+
+      // Feeding stats for the day
+      const dayFeedingActivities = feedingData.filter(
+        activity => format(new Date(activity.performed_at), 'yyyy-MM-dd') === dateStr
+      );
+      const feedingCount = dayFeedingActivities.length;
+      const feedingEffectiveness = this.calculateFeedingEffectiveness(dayFeedingActivities);
+      
+      feedingSchedule.push({
+        date: dateStr,
+        count: feedingCount,
+        effectiveness: feedingEffectiveness,
+      });
+
+      currentDate = addDays(currentDate, 1);
+    }
+
+    // Calculate overall stats
+    const totalWateringCount = wateringData.length;
+    const totalFeedingCount = feedingData.length;
+    const totalActivities = totalWateringCount + totalFeedingCount;
+
+    const overallWateringEffectiveness = this.calculateWateringEffectiveness(wateringData);
+    const overallFeedingEffectiveness = this.calculateFeedingEffectiveness(feedingData);
 
     return {
-      totalActivities: activities.length,
-      wateringCount: wateringActivities.length,
-      feedingCount: feedingActivities.length,
-      topDressingCount: topDressingActivities.length,
-      otherCount: otherActivities.length,
-      lastWatering: sortedWatering.length > 0 ? new Date(sortedWatering[0].performed_at) : undefined,
-      lastFeeding: sortedFeeding.length > 0 ? new Date(sortedFeeding[0].performed_at) : undefined,
-      lastTopDressing: sortedTopDressing.length > 0 ? new Date(sortedTopDressing[0].performed_at) : undefined,
+      wateringCount: totalWateringCount,
+      feedingCount: totalFeedingCount,
+      totalActivities,
+      wateringEffectiveness: overallWateringEffectiveness,
+      feedingEffectiveness: overallFeedingEffectiveness,
+      wateringSchedule,
+      feedingSchedule,
     };
+  }
+
+  private calculateWateringEffectiveness(activities: any[]): number {
+    if (activities.length === 0) return 0;
+
+    // Calculate effectiveness based on:
+    // 1. Time since last watering
+    // 2. Plant moisture level
+    // 3. Plant health score
+    const effectivenessScores = activities.map(activity => {
+      let score = 100;
+
+      // Deduct points if watering frequency is too high or too low
+      const daysSinceLastWatering = activity.days_since_last_watering || 0;
+      if (daysSinceLastWatering > 7) {
+        score -= (daysSinceLastWatering - 7) * 10;
+      } else if (daysSinceLastWatering < 2) {
+        score -= (2 - daysSinceLastWatering) * 15;
+      }
+
+      // Adjust based on moisture level
+      const moistureLevel = activity.moisture_level || 50;
+      if (moistureLevel < 30) {
+        score -= (30 - moistureLevel);
+      } else if (moistureLevel > 70) {
+        score -= (moistureLevel - 70);
+      }
+
+      // Consider plant health
+      const healthScore = activity.health_score || 3;
+      score += (healthScore - 3) * 10;
+
+      return Math.max(0, Math.min(100, score));
+    });
+
+    return effectivenessScores.reduce((sum, score) => sum + score, 0) / activities.length;
+  }
+
+  private calculateFeedingEffectiveness(activities: any[]): number {
+    if (activities.length === 0) return 0;
+
+    // Calculate effectiveness based on:
+    // 1. Time since last feeding
+    // 2. Plant nutrient levels
+    // 3. Growth rate after feeding
+    const effectivenessScores = activities.map(activity => {
+      let score = 100;
+
+      // Deduct points if feeding frequency is too high or too low
+      const daysSinceLastFeeding = activity.days_since_last_feeding || 0;
+      if (daysSinceLastFeeding > 14) {
+        score -= (daysSinceLastFeeding - 14) * 5;
+      } else if (daysSinceLastFeeding < 7) {
+        score -= (7 - daysSinceLastFeeding) * 10;
+      }
+
+      // Adjust based on nutrient levels
+      const nutrientLevel = activity.nutrient_level || 50;
+      if (nutrientLevel < 30) {
+        score -= (30 - nutrientLevel);
+      } else if (nutrientLevel > 70) {
+        score -= (nutrientLevel - 70);
+      }
+
+      // Consider growth rate
+      const growthRate = activity.growth_rate || 0;
+      score += growthRate * 5;
+
+      return Math.max(0, Math.min(100, score));
+    });
+
+    return effectivenessScores.reduce((sum, score) => sum + score, 0) / activities.length;
   }
 } 
