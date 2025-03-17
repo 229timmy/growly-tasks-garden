@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Search, Filter, Loader2 } from 'lucide-react';
+import { Plus, Search, Filter, Loader2, Download } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { DeleteDialog } from '@/components/ui/delete-dialog';
 import { HarvestRecordsService } from '@/lib/api/harvest-records';
 import { GrowsService } from '@/lib/api/grows';
 import type { HarvestRecord } from '@/types/common';
+import { exportToCSV, getExportFilename } from '@/lib/utils';
 
 const harvestRecordsService = new HarvestRecordsService();
 const growsService = new GrowsService();
@@ -69,21 +70,66 @@ export default function Harvests() {
     setDeleteDialogOpen(true);
   };
 
+  // Handle export of harvest records
+  const handleExport = () => {
+    if (!harvestRecords?.length) return;
+
+    try {
+      const exportData = harvestRecords.map(record => ({
+        grow_name: growNameMap[record.grow_id] || 'Unknown Grow',
+        harvest_date: new Date(record.harvest_date).toLocaleDateString(),
+        total_yield_grams: record.total_yield_grams || '',
+        yield_per_plant: record.yield_per_plant || '',
+        thc_percentage: record.thc_percentage || '',
+        cbd_percentage: record.cbd_percentage || '',
+        grow_duration_days: record.grow_duration_days || '',
+        cure_time_days: record.cure_time_days || '',
+        bud_density_rating: record.bud_density_rating || '',
+        aroma_intensity_rating: record.aroma_intensity_rating || '',
+        aroma_profile: record.aroma_profile ? record.aroma_profile.join(', ') : '',
+        primary_color: record.primary_color || '',
+        secondary_color: record.secondary_color || '',
+        trichome_coverage_rating: record.trichome_coverage_rating || '',
+        overall_quality_rating: record.overall_quality_rating || '',
+        flavor_notes: record.flavor_notes || '',
+        effect_notes: record.effect_notes || '',
+        special_characteristics: record.special_characteristics || '',
+        improvement_notes: record.improvement_notes || ''
+      }));
+
+      exportToCSV(exportData, getExportFilename('harvest_records'));
+      toast.success('Harvest records exported successfully');
+    } catch (error) {
+      console.error('Error exporting harvest records:', error);
+      toast.error('Failed to export harvest records');
+    }
+  };
+
   const isLoading = isLoadingRecords || isLoadingGrows;
 
   return (
     <div className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Harvest Records</h1>
-        <HarvestRecordDialog
-          onSuccess={() => queryClient.invalidateQueries({ queryKey: ['harvest-records'] })}
-          trigger={
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Harvest Record
-            </Button>
-          }
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={!harvestRecords?.length}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Records
+          </Button>
+          <HarvestRecordDialog
+            onSuccess={() => queryClient.invalidateQueries({ queryKey: ['harvest-records'] })}
+            trigger={
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Harvest Record
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       <div className="flex items-center space-x-4">
