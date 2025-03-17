@@ -56,17 +56,23 @@ export class PlantsService extends APIClient {
     return this.query(() => query);
   }
 
-  async getPlant(id: string): Promise<Plant> {
-    const session = await this.requireAuth();
-    
-    return this.query(() =>
-      supabase
+  async getPlant(id: string): Promise<Plant | null> {
+    try {
+      const session = await this.requireAuth();
+      
+      const { data, error } = await supabase
         .from('plants')
         .select('*')
         .eq('id', id)
         .eq('user_id', session.user.id)
-        .single()
-    );
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching plant:', error);
+      return null;
+    }
   }
 
   async createPlant(data: Omit<PlantInsert, 'user_id'>): Promise<Plant> {
@@ -101,17 +107,21 @@ export class PlantsService extends APIClient {
   async deletePlant(id: string): Promise<void> {
     const session = await this.requireAuth();
     
-    // First delete all photos for this plant
-    await this.deleteAllPlantPhotos(id);
-    
-    // Then delete the plant
-    await this.query(() =>
-      supabase
+    try {
+      // First delete all photos for this plant
+      await this.deleteAllPlantPhotos(id);
+      
+      // Then delete the plant
+      const { error } = await supabase
         .from('plants')
         .delete()
         .eq('id', id)
-        .eq('user_id', session.user.id)
-    );
+        .eq('user_id', session.user.id);
+      
+      if (error) throw error;
+    } catch (error) {
+      this.handleError(error);
+    }
   }
 
   async getPlantStats(): Promise<{

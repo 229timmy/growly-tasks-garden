@@ -3,12 +3,16 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlantsService } from '@/lib/api/plants';
 import { GrowsService } from '@/lib/api/grows';
+import { PlantCareService } from '@/lib/api/plant-care';
 import { Plant, PlantPhoto } from '@/types/common';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QueryErrorBoundary } from '@/components/ui/query-error-boundary';
 import { DeleteDialog } from '@/components/ui/delete-dialog';
+import { PlantMeasurements } from '@/components/plants/PlantMeasurements';
+import { PlantCareActivityDialog } from '@/components/plants/PlantCareActivityDialog';
+import { PlantCareActivityHistory } from '@/components/plants/PlantCareActivityHistory';
 import { toast } from 'sonner';
 import { 
   Loader2, 
@@ -20,11 +24,14 @@ import {
   Edit, 
   Upload,
   X,
-  Camera
+  Camera,
+  Leaf,
+  Plus
 } from 'lucide-react';
 
 const plantsService = new PlantsService();
 const growsService = new GrowsService();
+const plantCareService = new PlantCareService();
 
 export default function PlantDetail() {
   const { id } = useParams<{ id: string }>();
@@ -42,7 +49,7 @@ export default function PlantDetail() {
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => navigate('/plants')}
+          onClick={() => navigate('/app/plants')}
           className="flex items-center gap-1"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -61,7 +68,7 @@ export default function PlantDetail() {
         plantId={id}
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        onDeleted={() => navigate('/plants')}
+        onDeleted={() => navigate('/app/plants')}
       />
     </div>
   );
@@ -75,13 +82,15 @@ function PlantDetailContent({
   onDelete: () => void;
 }) {
   const navigate = useNavigate();
-  const { data: plant, isLoading } = useQuery({
-    queryKey: ['plant', plantId],
+  const queryClient = useQueryClient();
+  const { data: plant, isLoading, isError, error } = useQuery({
+    queryKey: ['plants', plantId],
     queryFn: () => plantsService.getPlant(plantId),
+    retry: 1
   });
   
   const { data: grow } = useQuery({
-    queryKey: ['grow', plant?.grow_id],
+    queryKey: ['grows', plant?.grow_id],
     queryFn: () => growsService.getGrow(plant!.grow_id),
     enabled: !!plant?.grow_id,
   });
@@ -94,11 +103,20 @@ function PlantDetailContent({
     );
   }
   
-  if (!plant) {
+  if (isError || !plant) {
     return (
       <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <p className="text-muted-foreground">Plant not found</p>
+        <CardContent className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="mb-4 rounded-full bg-destructive/10 p-3">
+            <X className="h-6 w-6 text-destructive" />
+          </div>
+          <h3 className="mb-2 text-xl font-semibold">Plant Not Found</h3>
+          <p className="mb-6 text-muted-foreground">
+            The plant you're looking for doesn't exist or you don't have permission to view it.
+          </p>
+          <Button onClick={() => navigate('/app/plants')}>
+            Return to Plants
+          </Button>
         </CardContent>
       </Card>
     );
@@ -121,6 +139,11 @@ function PlantDetailContent({
     });
   };
   
+  // Function to refresh plant care data
+  const refreshPlantCareData = () => {
+    queryClient.invalidateQueries({ queryKey: ["plant-care", plantId] });
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between gap-4">
@@ -132,7 +155,7 @@ function PlantDetailContent({
             </span>
             <span className="text-muted-foreground">•</span>
             <Link 
-              to={`/grows/${plant.grow_id}`}
+              to={`/app/grows/${plant.grow_id}`}
               className="text-primary hover:underline"
             >
               {grow?.name || 'Loading grow...'}
@@ -144,7 +167,7 @@ function PlantDetailContent({
           <Button 
             variant="outline" 
             className="flex items-center gap-2"
-            onClick={() => navigate(`/plants/${plantId}/edit`)}
+            onClick={() => navigate(`/app/plants/${plantId}/edit`)}
           >
             <Edit className="h-4 w-4" />
             <span>Edit</span>
@@ -222,6 +245,40 @@ function PlantDetailContent({
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardContent>
+          <QueryErrorBoundary>
+            <PlantMeasurements plantId={plantId} />
+          </QueryErrorBoundary>
+        </CardContent>
+      </Card>
+
+      {/* Plant Care Activities */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Leaf className="h-5 w-5 text-green-500" />
+            Care Activities
+          </CardTitle>
+          <PlantCareActivityDialog 
+            growId={plant.grow_id} 
+            plantId={plantId}
+            onSuccess={refreshPlantCareData} 
+            trigger={
+              <Button variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Record Activity
+              </Button>
+            }
+          />
+        </CardHeader>
+        <CardContent>
+          <QueryErrorBoundary>
+            <PlantCareActivityHistory growId={plant.grow_id} plantId={plantId} limit={5} />
+          </QueryErrorBoundary>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -395,7 +452,12 @@ function DeletePlantDialog({
       onDeleted();
     },
     onError: (error) => {
-      toast.error('Failed to delete plant');
+      console.error('Error deleting plant:', error);
+      // Check if we should still navigate away (plant might be deleted despite the error)
+      queryClient.invalidateQueries({ queryKey: ['plants'] });
+      toast.error('There was an issue while deleting the plant');
+      // Still navigate away as the plant is likely deleted
+      onDeleted();
     },
   });
   

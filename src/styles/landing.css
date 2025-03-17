@@ -1,0 +1,26 @@
+/* Import Webflow styles */
+@import url('https://cdn.prod.website-files.com/67d6b5c042fc281ac04054f3/css/esss-groovy-site.webflow.1c21903ef.css');
+
+/* Custom styles */
+@media (min-width:992px) {
+    html.w-mod-js:not(.w-mod-ix) [data-w-id="2c7e47d6-b649-0de4-38e8-12a7a59dd911"] {opacity:0;}
+    html.w-mod-js:not(.w-mod-ix) [data-w-id="f92ee9d8-1073-20c3-85a1-52a0d5ed446f"] {opacity:0;}
+}
+
+@media (max-width:991px) and (min-width:768px) {
+    html.w-mod-js:not(.w-mod-ix) [data-w-id="0becfdc3-d3f2-402c-381a-1d12f18fdf87"] {opacity:0;}
+    html.w-mod-js:not(.w-mod-ix) [data-w-id="5bd9d8ca-59e4-d22e-0729-0e8bf1205a64"] {opacity:0;}
+}
+
+.w-webflow-badge {display: none !important;}
+
+::-webkit-scrollbar { width: 6px; height: 6px;}
+::-webkit-scrollbar-thumb { background: #878f9a;}
+::-webkit-scrollbar-track { background: #1d2228;}
+
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    outline: 0;
+} 

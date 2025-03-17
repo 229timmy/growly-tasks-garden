@@ -35,6 +35,9 @@ export function GrowCard({
   className,
   style,
 }: GrowCardProps) {
+  // Log the imageUrl prop
+  console.log(`GrowCard ${id} (${name}) imageUrl:`, imageUrl);
+
   // Stage colors
   const stageColors = {
     seedling: "bg-blue-500",
@@ -62,7 +65,7 @@ export function GrowCard({
   };
 
   return (
-    <Link to={`/grows/${id}`}>
+    <Link to={`/app/grows/${id}`}>
       <Card 
         className={cn(
           "overflow-hidden transition-all cursor-pointer card-hover",
@@ -76,14 +79,22 @@ export function GrowCard({
             style={{ width: `${progress}%` }} 
           />
         </div>
-        {imageUrl && (
-          <div className="h-32 w-full overflow-hidden">
+        {imageUrl ? (
+          <div className="h-32 w-full overflow-hidden bg-muted">
             <img 
               src={imageUrl} 
               alt={name} 
               className="w-full h-full object-cover"
               loading="lazy"
+              onError={(e) => {
+                console.error(`Failed to load image for ${name}:`, e);
+                e.currentTarget.style.display = 'none';
+              }}
             />
+          </div>
+        ) : (
+          <div className="h-32 w-full overflow-hidden bg-muted flex items-center justify-center">
+            <Image className="w-8 h-8 text-muted-foreground opacity-50" />
           </div>
         )}
         <CardContent className="p-5">

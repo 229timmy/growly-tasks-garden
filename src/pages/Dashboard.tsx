@@ -13,7 +13,7 @@ import {
   CheckSquare 
 } from "lucide-react";
 import GrowCard from "@/components/dashboard/GrowCard";
-import TaskItem from "@/components/dashboard/TaskItem";
+import { TaskItem } from "@/components/tasks/TaskItem";
 import StatsCard from "@/components/dashboard/StatsCard";
 import AnalyticsChart from "@/components/dashboard/AnalyticsChart";
 

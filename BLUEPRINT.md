@@ -72,6 +72,10 @@
   - ✅ Photo upload
   - ✅ Photo gallery
   - ✅ Storage integration
+- ✅ Plant care activities
+  - ✅ Individual plant care tracking
+  - ✅ Batch care activities for multiple plants
+  - ✅ Activity history and statistics
 
 #### 8. Environmental Data
 - ✅ Environmental data storage schema
@@ -168,6 +172,7 @@
 - Advanced tracking
 - Full task management
 - Batch measurements
+- Batch plant care activities
 - Basic analytics
 
 ### Master Tier ($19/month)
@@ -312,10 +317,11 @@ src/
 4. [ ] Basic Analytics
 
 ### Phase 3: Task & Plant Management
-1. [ ] Task System
-2. [ ] Plant Tracking
-3. [ ] Batch Plant Creation
-4. [ ] Integration between Grows & Tasks
+1. [✅] Task System
+2. [✅] Plant Tracking
+3. [✅] Batch Plant Creation
+4. [✅] Batch Plant Care Activities
+5. [✅] Integration between Grows & Tasks
 
 ### Phase 4: Advanced Features
 1. [ ] Advanced Analytics

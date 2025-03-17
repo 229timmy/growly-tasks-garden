@@ -342,6 +342,28 @@ export default function Help() {
                   </AccordionContent>
                 </AccordionItem>
                 
+                <AccordionItem value="batch-care-activities">
+                  <AccordionTrigger>How do I record care activities for multiple plants at once?</AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-sm text-muted-foreground">
+                      The batch care activity feature allows you to record the same care activity for multiple plants simultaneously:
+                    </p>
+                    <ol className="text-sm list-decimal pl-4 space-y-1 mt-2">
+                      <li>Navigate to a grow's detail page</li>
+                      <li>Click the "Batch Care Activities" button</li>
+                      <li>Select the plants you want to include using the checkboxes (or use "Select All")</li>
+                      <li>Choose the activity type (watering, feeding, top dressing, or other)</li>
+                      <li>Fill in the details like amount, unit, and product name</li>
+                      <li>Add any notes if needed</li>
+                      <li>Click "Record for X Plants" to save the activity for all selected plants</li>
+                    </ol>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      <Badge variant="outline" className="mr-1">Pro</Badge>
+                      This feature is available for Pro tier and above users.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+                
                 <AccordionItem value="tasks-management">
                   <AccordionTrigger>How do I manage recurring tasks?</AccordionTrigger>
                   <AccordionContent>

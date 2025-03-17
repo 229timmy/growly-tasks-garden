@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Search, Thermometer, Droplets, FlowerIcon, Timer, Plus, Trash2, Loader2 } from 'lucide-react';
+import { Search, Thermometer, Droplets, FlowerIcon, Timer, Plus, Trash2, Loader2, Leaf } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,9 +16,13 @@ import { BatchMeasurementDialog } from '@/components/plants/BatchMeasurementDial
 import { RecordEnvironmentalDataDialog } from '@/components/grows/RecordEnvironmentalDataDialog';
 import { EnvironmentalDataHistory } from '@/components/grows/EnvironmentalDataHistory';
 import { EnvironmentalTargetsDialog } from '@/components/grows/EnvironmentalTargetsDialog';
+import { PlantCareActivityDialog } from '@/components/plants/PlantCareActivityDialog';
+import { BatchCareActivityDialog } from '@/components/plants/BatchCareActivityDialog';
+import { PlantCareActivityHistory } from '@/components/plants/PlantCareActivityHistory';
 import { GrowsService } from '@/lib/api/grows';
 import { PlantsService } from '@/lib/api/plants';
 import { EnvironmentalService } from '@/lib/api/environmental';
+import { PlantCareService } from '@/lib/api/plant-care';
 import { PlantCard } from "@/components/dashboard/PlantCard";
 import { EnvironmentalChart } from '@/components/grows/EnvironmentalChart';
 import type { Plant } from '@/types/common';
@@ -193,6 +197,11 @@ export default function GrowDetails() {
   // Function to refresh grow data
   const refreshGrowData = () => {
     queryClient.invalidateQueries({ queryKey: ["grow", id] });
+  };
+
+  // Function to refresh plant care data
+  const refreshPlantCareData = () => {
+    queryClient.invalidateQueries({ queryKey: ["plant-care", id] });
   };
 
   // If we're on the "new" route, show the create dialog
@@ -489,6 +498,37 @@ export default function GrowDetails() {
               )}
             </>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Plant Care Activities */}
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle className="flex items-center gap-2">
+              <Leaf className="h-5 w-5 text-green-500" />
+              Plant Care Activities
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <PlantCareActivityDialog 
+                growId={id as string} 
+                onSuccess={refreshPlantCareData} 
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Record Activity
+                  </Button>
+                }
+              />
+              <BatchCareActivityDialog 
+                growId={id as string} 
+                onSuccess={refreshPlantCareData} 
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <PlantCareActivityHistory growId={id as string} limit={5} />
         </CardContent>
       </Card>
 
