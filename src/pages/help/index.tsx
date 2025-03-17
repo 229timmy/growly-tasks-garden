@@ -127,8 +127,12 @@ export default function Help() {
                 <CardDescription>Your grow monitoring central hub</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-md border border-border w-full h-40 bg-muted flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground">Dashboard preview</p>
+                <div className="rounded-md border border-border w-full overflow-hidden">
+                  <img 
+                    src="/dashboard.png" 
+                    alt="Dashboard preview" 
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   The Dashboard provides a quick overview of all your active grows, upcoming tasks, and recent activities. 
@@ -153,8 +157,12 @@ export default function Help() {
                 <CardDescription>Track and manage your growing projects</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-md border border-border w-full h-40 bg-muted flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground">Grows preview</p>
+                <div className="rounded-md border border-border w-full overflow-hidden">
+                  <img 
+                    src="/grows.png" 
+                    alt="Grows preview" 
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Create and manage your growing projects. Track progress through different growth stages, 
@@ -179,8 +187,12 @@ export default function Help() {
                 <CardDescription>Organize your grow maintenance schedule</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-md border border-border w-full h-40 bg-muted flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground">Tasks preview</p>
+                <div className="rounded-md border border-border w-full overflow-hidden">
+                  <img 
+                    src="/tasks.png" 
+                    alt="Tasks preview" 
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Create and manage tasks to keep your garden maintenance on schedule. Set priorities, due dates, 
@@ -205,8 +217,12 @@ export default function Help() {
                 <CardDescription>Visualize growth data and trends</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-md border border-border w-full h-40 bg-muted flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground">Analytics preview</p>
+                <div className="rounded-md border border-border w-full overflow-hidden">
+                  <img 
+                    src="/analytics.png" 
+                    alt="Analytics preview" 
+                    className="w-full h-auto object-cover"
+                  />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Analyze your grow data to optimize your gardening conditions. Track environmental trends, 
