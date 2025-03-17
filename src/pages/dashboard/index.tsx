@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/auth/AuthContext';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,14 @@ import { PlantsService } from '@/lib/api/plants';
 import { TasksService } from '@/lib/api/tasks';
 import { Loader2, Plus } from 'lucide-react';
 import { GrowCard } from '@/components/dashboard/GrowCard';
+import { TaskItem } from '@/components/tasks/TaskItem';
+import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
+import { QuickActions } from '@/components/dashboard/QuickActions';
 import type { Database } from '@/types/database';
+import { calculateGrowProgress } from '@/lib/utils';
 
 type Grow = Database['public']['Tables']['grows']['Row'];
+type Task = Database['public']['Tables']['tasks']['Row'];
 
 const growsService = new GrowsService();
 const plantsService = new PlantsService();
@@ -18,6 +23,7 @@ const tasksService = new TasksService();
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
+  const queryClient = useQueryClient();
   
   const { data: grows, isLoading: isLoadingGrows, error: growsError } = useQuery({
     queryKey: ['grows'],
@@ -46,6 +52,15 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  const { data: tasks, isLoading: isLoadingRecentTasks } = useQuery({
+    queryKey: ['tasks', 'recent'],
+    queryFn: () => tasksService.listTasks({ 
+      completed: false,
+      limit: 5
+    }),
+    enabled: !!user,
+  });
+
   // Add query for photos when grows are loaded
   const growPhotoQueries = useQueries({
     queries: (grows || []).map(grow => ({
@@ -68,6 +83,28 @@ export default function Dashboard() {
       photoMap[grow.id] = growPhotoQueries.data[index];
     });
   }
+
+  // Add query for task related data
+  const { data: taskRelatedData } = useQuery({
+    queryKey: ['tasks', 'related-data'],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const [grows, plants] = await Promise.all([
+        growsService.listGrows(),
+        plantsService.listPlants()
+      ]);
+      
+      const growMap = new Map(grows.map(g => [g.id, g]));
+      const plantMap = new Map(plants.map(p => [p.id, p]));
+      
+      return {
+        grows: growMap,
+        plants: plantMap
+      };
+    },
+    enabled: !!user
+  });
 
   // Log the current state
   console.log('Auth state:', { user, loading });
@@ -184,20 +221,21 @@ export default function Dashboard() {
         </Card>
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Grows Section */}
-        <div className="space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Your Grows</h2>
             <div className="flex gap-2">
               <Button asChild>
-                <Link to="/grows/new">
+                <Link to="/app/grows/new">
                   <Plus className="h-4 w-4 mr-2" />
                   New Grow
                 </Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/grows">View All</Link>
+                <Link to="/app/grows">View All</Link>
               </Button>
             </div>
           </div>
@@ -219,13 +257,13 @@ export default function Dashboard() {
                 <p className="text-muted-foreground">No grows yet. Create your first grow to get started!</p>
                 <div className="mt-4">
                   <Button asChild>
-                    <Link to="/grows/new">Create Grow</Link>
+                    <Link to="/app/grows/new">Create Grow</Link>
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="space-y-4">
               {activeGrows.slice(0, 3).map((grow) => (
                 <GrowCard
                   key={grow.id}
@@ -241,7 +279,7 @@ export default function Dashboard() {
                   temperature={grow.target_temp_high || 0}
                   humidity={grow.target_humidity_high || 0}
                   lastUpdated={grow.updated_at || grow.created_at}
-                  progress={75} // We can calculate this based on stage and time
+                  progress={calculateGrowProgress(grow.start_date)}
                   imageUrl={photoMap[grow.id] || undefined}
                 />
               ))}
@@ -249,50 +287,91 @@ export default function Dashboard() {
           )}
         </div>
         
-        {/* Tasks Section */}
+        {/* Quick Actions */}
+        <QuickActions />
+      </div>
+      
+      {/* Activity Feed and Tasks */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ActivityFeed />
+        
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Recent Tasks</h2>
-            <Button asChild>
-              <Link to="/tasks">View All</Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild>
+                <Link to="/app/tasks/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Task
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/app/tasks">View All</Link>
+              </Button>
+            </div>
           </div>
-          {isLoadingTasks ? (
+          {isLoadingTasks || isLoadingRecentTasks ? (
             <Card>
               <CardContent className="flex items-center justify-center py-6">
                 <Loader2 className="h-6 w-6 animate-spin" />
               </CardContent>
             </Card>
-          ) : !taskStats?.total ? (
+          ) : !tasks?.length ? (
             <Card>
               <CardContent className="pt-6">
                 <p className="text-muted-foreground">No tasks yet. Add some tasks to track your grows!</p>
                 <div className="mt-4">
                   <Button asChild>
-                    <Link to="/tasks">Create Task</Link>
+                    <Link to="/app/tasks/new">Create Task</Link>
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Completed</span>
-                    <span className="font-medium">{taskStats.completed}</span>
+            <div className="space-y-4">
+              {tasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  id={task.id}
+                  title={task.title}
+                  description={task.description || undefined}
+                  dueDate={task.due_date || new Date().toISOString()}
+                  priority={task.priority}
+                  isCompleted={task.completed}
+                  relatedTo={task.grow_id && taskRelatedData?.grows.get(task.grow_id) ? {
+                    type: "grow",
+                    id: task.grow_id,
+                    name: taskRelatedData.grows.get(task.grow_id)?.name || "Unnamed Grow"
+                  } : undefined}
+                  onToggle={(id, completed) => {
+                    tasksService.toggleTaskCompletion(id).then(() => {
+                      // Invalidate relevant queries
+                      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                      queryClient.invalidateQueries({ queryKey: ['activities'] });
+                    });
+                  }}
+                />
+              ))}
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Completed</span>
+                      <span className="font-medium">{taskStats?.completed}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Upcoming</span>
+                      <span className="font-medium">{taskStats?.upcoming}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Overdue</span>
+                      <span className="font-medium text-destructive">{taskStats?.overdue}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Upcoming</span>
-                    <span className="font-medium">{taskStats.upcoming}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Overdue</span>
-                    <span className="font-medium text-destructive">{taskStats.overdue}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
       </div>

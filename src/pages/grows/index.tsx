@@ -12,6 +12,7 @@ import type { Grow } from '@/types/common';
 import { GrowCard } from '@/components/dashboard/GrowCard';
 import { CreateGrowDialog } from '@/components/grows/CreateGrowDialog';
 import { QueryErrorBoundary } from '@/components/ui/query-error-boundary';
+import { calculateGrowProgress } from '@/lib/utils';
 
 const growsService = new GrowsService();
 const environmentalService = new EnvironmentalService();
@@ -22,28 +23,11 @@ function mapStage(stage: 'seedling' | 'vegetative' | 'flowering'): 'seedling' | 
   return stage;
 }
 
-// Helper function to calculate progress based on stage and days
-function calculateProgress(stage: 'seedling' | 'vegetative' | 'flowering', daysActive: number): number {
-  // Approximate durations for each stage
-  const stageDurations = {
-    seedling: 14, // 2 weeks
-    vegetative: 28, // 4 weeks
-    flowering: 56, // 8 weeks
-  };
-
-  const stageProgress = Math.min(100, (daysActive / stageDurations[stage]) * 100);
-  
-  // Add base progress for previous stages
-  switch (stage) {
-    case 'flowering':
-      return 66.67 + (stageProgress * 0.3333);
-    case 'vegetative':
-      return 33.33 + (stageProgress * 0.3333);
-    case 'seedling':
-      return stageProgress * 0.3333;
-    default:
-      return 0;
-  }
+// Helper function to calculate days active
+function calculateDaysActive(startDate: string): number {
+  const start = new Date(startDate);
+  const now = new Date();
+  return Math.ceil((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 // Helper function to get environmental data from targets
@@ -68,7 +52,12 @@ export default function Grows() {
     <div className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Grows</h1>
-        <Button onClick={() => setCreateDialogOpen(true)}>New Grow</Button>
+        <Link to="/app/grows/new">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            New Grow
+          </Button>
+        </Link>
       </div>
 
       <div className="flex items-center space-x-4">
@@ -183,15 +172,9 @@ function GrowsContent({ search }: { search: string }) {
 
   // Helper function to get the latest photo URL for a grow
   const getPhotoUrl = (growId: string) => {
-    return photoMap[growId] || null;
-  };
-
-  // Helper function to calculate days active
-  const calculateDaysActive = (startDate: string) => {
-    return Math.ceil(
-      (new Date().getTime() - new Date(startDate).getTime()) / 
-      (1000 * 60 * 60 * 24)
-    );
+    const photoUrl = photoMap[growId] || null;
+    console.log(`Photo URL for grow ${growId}:`, photoUrl);
+    return photoUrl;
   };
 
   const renderGrowCard = (grow: Grow) => {
@@ -209,7 +192,7 @@ function GrowsContent({ search }: { search: string }) {
         temperature={envData.temperature}
         humidity={envData.humidity}
         lastUpdated={grow.updated_at}
-        progress={grow.end_date ? 100 : calculateProgress(grow.stage, daysActive)}
+        progress={grow.end_date ? 100 : calculateGrowProgress(grow.start_date || new Date().toISOString())}
         imageUrl={getPhotoUrl(grow.id)}
       />
     );
