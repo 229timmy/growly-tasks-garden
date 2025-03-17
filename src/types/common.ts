@@ -31,6 +31,10 @@ export type PlantCareActivity = Tables['plant_care_activities']['Row'];
 export type PlantCareActivityInsert = Tables['plant_care_activities']['Insert'];
 export type PlantCareActivityUpdate = Tables['plant_care_activities']['Update'];
 
+export type HarvestRecord = Tables['harvest_records']['Row'];
+export type HarvestRecordInsert = Tables['harvest_records']['Insert'];
+export type HarvestRecordUpdate = Tables['harvest_records']['Update'];
+
 // Export enum types
 export type UserTier = Enums['user_tier'];
 export type GrowStage = Enums['grow_stage'];

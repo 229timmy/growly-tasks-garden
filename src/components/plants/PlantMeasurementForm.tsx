@@ -294,7 +294,7 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
             )}
           />
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {canUseBatchMeasurements() && !plantId && (
               <Button
                 type="button"
@@ -308,6 +308,7 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
                   }
                 }}
                 disabled={batchMeasurements.length >= batchSizeLimit}
+                className="w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Add to Batch ({batchMeasurements.length}/{batchSizeLimit})
@@ -318,6 +319,7 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
                 type="button" 
                 onClick={submitBatchMeasurements}
                 disabled={isSubmitting}
+                className="w-full sm:w-auto"
               >
                 {isSubmitting 
                   ? 'Recording...' 
@@ -325,7 +327,11 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
                 }
               </Button>
             ) : (
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full sm:w-auto"
+              >
                 {isSubmitting ? 'Recording...' : 'Record Measurement'}
               </Button>
             )}

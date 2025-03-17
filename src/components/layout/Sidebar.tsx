@@ -8,7 +8,8 @@ import {
   BarChart3, 
   Settings,
   HelpCircle,
-  X
+  X,
+  Wheat
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -78,6 +79,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <path d="M8.5 19.5H15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>,
       href: "/app/plants"
+    },
+    {
+      label: "Harvests",
+      icon: <Wheat className="h-5 w-5" />,
+      href: "/app/harvests"
     },
     {
       label: "Analytics",

@@ -20,6 +20,7 @@ import EditPlant from '@/pages/plants/edit';
 import Analytics from '@/pages/analytics';
 import Settings from '@/pages/settings';
 import Help from '@/pages/help';
+import Harvests from '@/pages/harvests';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
             <Route path="plants/new" element={<NewPlant />} />
             <Route path="plants/:id" element={<PlantDetail />} />
             <Route path="plants/:id/edit" element={<EditPlant />} />
+            <Route path="harvests" element={<Harvests />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
             <Route path="help" element={<Help />} />

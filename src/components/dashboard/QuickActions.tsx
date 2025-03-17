@@ -81,12 +81,12 @@ export function QuickActions({ className, plantId, growId }: QuickActionsProps) 
                 onClick={action.onClick}
               >
                 <div className="flex items-start gap-4">
-                  <div className="p-2 rounded-full bg-primary/10 text-primary">
+                  <div className="p-2 rounded-full bg-primary/10 text-primary flex-shrink-0">
                     {action.icon}
                   </div>
-                  <div className="text-left">
-                    <div className="font-medium">{action.label}</div>
-                    <div className="text-xs text-muted-foreground">
+                  <div className="text-left overflow-hidden">
+                    <div className="font-medium truncate">{action.label}</div>
+                    <div className="text-xs text-muted-foreground truncate">
                       {action.description}
                     </div>
                   </div>

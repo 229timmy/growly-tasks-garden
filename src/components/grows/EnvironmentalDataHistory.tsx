@@ -118,7 +118,7 @@ export function EnvironmentalDataHistory({
             </Table>
             
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mt-4">
                 <div className="text-sm text-muted-foreground">
                   Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, data.length)} of {data.length} entries
                 </div>

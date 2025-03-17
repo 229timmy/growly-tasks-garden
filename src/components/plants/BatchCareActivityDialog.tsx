@@ -232,7 +232,7 @@ export function BatchCareActivityDialog({
   return (
     <Dialog open={isControlled ? open : undefined} onOpenChange={isControlled ? onOpenChange : undefined}>
       <DialogTrigger asChild>
-        <Button variant="outline">Batch Care Activities</Button>
+        <Button variant="outline" className="w-full sm:w-auto">Batch Care Activities</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -408,7 +408,7 @@ export function BatchCareActivityDialog({
           </div>
         </div>
 
-        <DialogFooter className="flex items-center justify-between">
+        <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-2">
           <Button
             type="button"
             variant="outline"
@@ -417,6 +417,7 @@ export function BatchCareActivityDialog({
               setSelectAll(false);
             }}
             disabled={selectedPlantIds.length === 0 || isSubmitting}
+            className="w-full sm:w-auto order-2 sm:order-1"
           >
             Clear Selection
           </Button>
@@ -424,6 +425,7 @@ export function BatchCareActivityDialog({
             type="button"
             onClick={handleSubmit}
             disabled={selectedPlantIds.length === 0 || isSubmitting}
+            className="w-full sm:w-auto order-1 sm:order-2"
           >
             {isSubmitting ? 'Submitting...' : `Record for ${selectedPlantIds.length} Plants`}
           </Button>

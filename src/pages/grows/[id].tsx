@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Search, Thermometer, Droplets, FlowerIcon, Timer, Plus, Trash2, Loader2, Leaf } from 'lucide-react';
+import { Search, Thermometer, Droplets, FlowerIcon, Timer, Plus, Trash2, Loader2, Leaf, Scale } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -27,6 +27,8 @@ import { PlantCard } from "@/components/dashboard/PlantCard";
 import { EnvironmentalChart } from '@/components/grows/EnvironmentalChart';
 import type { Plant } from '@/types/common';
 import type { EnvironmentalData } from "@/lib/api/environmental";
+import { HarvestRecordDialog } from '@/components/harvest/HarvestRecordDialog';
+import { HarvestRecordsService } from '@/lib/api/harvest-records';
 
 const growsService = new GrowsService();
 const plantsService = new PlantsService();
@@ -204,6 +206,21 @@ export default function GrowDetails() {
     queryClient.invalidateQueries({ queryKey: ["plant-care", id] });
   };
 
+  // Add query for harvest record
+  const { data: harvestRecord, isLoading: isLoadingHarvestRecord } = useQuery({
+    queryKey: ["harvest-record", id],
+    queryFn: () => {
+      const harvestRecordsService = new HarvestRecordsService();
+      return harvestRecordsService.getHarvestRecordByGrow(id as string);
+    },
+    enabled: !!id && id !== 'new' && (grow?.stage === 'harvested' || !!grow?.end_date),
+  });
+
+  // Add a function to refresh harvest record data
+  const refreshHarvestRecord = () => {
+    queryClient.invalidateQueries({ queryKey: ["harvest-record", id] });
+  };
+
   // If we're on the "new" route, show the create dialog
   if (id === 'new') {
     return (
@@ -246,9 +263,9 @@ export default function GrowDetails() {
 
   return (
     <div className="container mx-auto py-8 space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
         <h1 className="text-3xl font-bold">{grow.name}</h1>
-        <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
+        <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)} className="w-full sm:w-auto">
           <Trash2 className="w-4 h-4 mr-2" />
           Delete Grow
         </Button>
@@ -394,9 +411,9 @@ export default function GrowDetails() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle>Plants</CardTitle>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <BatchMeasurementDialog growId={id as string} />
-            <Button onClick={() => setCreatePlantOpen(true)}>
+            <Button onClick={() => setCreatePlantOpen(true)} className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add Plant
             </Button>
@@ -509,12 +526,12 @@ export default function GrowDetails() {
               <Leaf className="h-5 w-5 text-green-500" />
               Plant Care Activities
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <PlantCareActivityDialog 
                 growId={id as string} 
                 onSuccess={refreshPlantCareData} 
                 trigger={
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Record Activity
                   </Button>
@@ -531,6 +548,89 @@ export default function GrowDetails() {
           <PlantCareActivityHistory growId={id as string} limit={5} />
         </CardContent>
       </Card>
+
+      {/* Harvest Record Section - Only show for harvested grows */}
+      {(grow?.stage === 'harvested' || grow?.end_date) && (
+        <Card>
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Scale className="h-5 w-5 text-amber-500" />
+              Harvest Record
+            </CardTitle>
+            {!harvestRecord && !isLoadingHarvestRecord && (
+              <HarvestRecordDialog
+                growId={id as string}
+                onSuccess={refreshHarvestRecord}
+                trigger={
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Record Harvest
+                  </Button>
+                }
+              />
+            )}
+          </CardHeader>
+          <CardContent>
+            {isLoadingHarvestRecord ? (
+              <div className="flex items-center justify-center h-[100px]">
+                <Loader2 className="w-6 h-6 animate-spin" />
+              </div>
+            ) : !harvestRecord ? (
+              <div className="rounded-md border border-dashed p-6 text-center">
+                <h3 className="text-lg font-medium">No Harvest Record</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Record detailed metrics about your harvest to track quality and yield over time.
+                </p>
+                <div className="mt-4">
+                  <HarvestRecordDialog
+                    growId={id as string}
+                    onSuccess={refreshHarvestRecord}
+                    trigger={<Button>Record Harvest</Button>}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Yield Information */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-muted rounded-md p-3">
+                    <div className="text-xs text-muted-foreground">Total Yield</div>
+                    <div className="text-xl font-bold">
+                      {harvestRecord.total_yield_grams ? `${harvestRecord.total_yield_grams}g` : 'N/A'}
+                    </div>
+                  </div>
+                  <div className="bg-muted rounded-md p-3">
+                    <div className="text-xs text-muted-foreground">Yield Per Plant</div>
+                    <div className="text-xl font-bold">
+                      {harvestRecord.yield_per_plant ? `${harvestRecord.yield_per_plant}g` : 'N/A'}
+                    </div>
+                  </div>
+                  <div className="bg-muted rounded-md p-3">
+                    <div className="text-xs text-muted-foreground">Overall Quality</div>
+                    <div className="text-xl font-bold">
+                      {harvestRecord.overall_quality_rating ? `${harvestRecord.overall_quality_rating}/10` : 'N/A'}
+                    </div>
+                  </div>
+                  <div className="bg-muted rounded-md p-3">
+                    <div className="text-xs text-muted-foreground">Harvest Date</div>
+                    <div className="text-xl font-bold">
+                      {new Date(harvestRecord.harvest_date).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end">
+                  <HarvestRecordDialog
+                    harvestRecordId={harvestRecord.id}
+                    onSuccess={refreshHarvestRecord}
+                    trigger={<Button variant="outline" size="sm">View Full Details</Button>}
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <CreatePlantDialog
         open={createPlantOpen}
