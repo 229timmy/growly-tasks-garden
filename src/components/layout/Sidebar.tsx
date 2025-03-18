@@ -9,7 +9,8 @@ import {
   Settings,
   HelpCircle,
   X,
-  Wheat
+  Wheat,
+  Tent
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       label: "Grows",
-      icon: <Sprout className="h-5 w-5" />,
+      icon: <Tent className="h-5 w-5" />,
       href: "/app/grows"
     },
     {
@@ -71,13 +72,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       label: "Plants",
-      icon: <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M6 9L11.9922 4L18 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M12 4V13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M8.38965 19.5C7.04588 17.5293 6 15.5293 6 13C6 12.1182 6.19582 11.257 6.57664 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M15.61 19.5C16.9538 17.5293 18 15.5293 18 13C18 12.1182 17.8042 11.257 17.4234 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M8.5 19.5H15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      </svg>,
+      icon: <Sprout className="h-5 w-5" />,
       href: "/app/plants"
     },
     {
