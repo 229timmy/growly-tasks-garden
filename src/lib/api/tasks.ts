@@ -2,12 +2,14 @@ import { APIClient } from './client';
 import type { Database } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { ActivitiesService } from './activities';
+import { NotificationsService } from './notifications';
 
-type Task = Database['public']['Tables']['tasks']['Row'];
-type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
-type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
+export type Task = Database['public']['Tables']['tasks']['Row'];
+export type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
+export type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 
 const activitiesService = new ActivitiesService();
+const notificationsService = new NotificationsService();
 
 export class TasksService extends APIClient {
   async listTasks(filters?: {
@@ -63,44 +65,61 @@ export class TasksService extends APIClient {
     return data;
   }
 
-  async createTask(data: Omit<TaskInsert, 'user_id'>): Promise<Task> {
+  async addTask(data: Omit<TaskInsert, 'user_id'>): Promise<Task> {
     const session = await this.requireAuth();
     
-    const { data: task } = await supabase
+    const { data: task, error } = await supabase
       .from('tasks')
-      .insert({
+      .insert([{
         ...data,
         user_id: session.user.id,
-      })
+      }])
       .select()
       .single();
-      
-    if (!task) throw new Error('Failed to create task');
-
+    
+    if (error) throw this.handleError(error);
+    
     // Track task creation activity
-    await activitiesService.addActivity({
-      type: 'task_created',
-      title: `Created task: ${task.title}`,
-      description: task.description,
-      related_task_id: task.id,
-      related_grow_id: task.grow_id,
-    });
-
+    await activitiesService.trackTaskCreated(task.id, task.title);
+    
+    // Send notification if task is due soon (within 24 hours)
+    if (task.due_date) {
+      const dueDate = new Date(task.due_date);
+      const now = new Date();
+      const hoursUntilDue = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursUntilDue <= 24 && hoursUntilDue > 0) {
+        await notificationsService.notifyTaskDue(task.id, task.title, dueDate);
+      }
+    }
+    
     return task;
   }
 
-  async updateTask(id: string, data: TaskUpdate): Promise<Task> {
+  async updateTask(id: string, data: Partial<Task>): Promise<Task> {
     const session = await this.requireAuth();
     
-    const { data: task } = await supabase
+    const { data: task, error } = await supabase
       .from('tasks')
       .update(data)
       .eq('id', id)
       .eq('user_id', session.user.id)
       .select()
       .single();
+    
+    if (error) throw this.handleError(error);
+    
+    // If due date was updated, check if we need to send a notification
+    if (data.due_date) {
+      const dueDate = new Date(data.due_date);
+      const now = new Date();
+      const hoursUntilDue = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
       
-    if (!task) throw new Error('Task not found');
+      if (hoursUntilDue <= 24 && hoursUntilDue > 0) {
+        await notificationsService.notifyTaskDue(task.id, task.title, dueDate);
+      }
+    }
+    
     return task;
   }
 
@@ -122,13 +141,7 @@ export class TasksService extends APIClient {
     
     // Track task completion activity
     if (updatedTask.completed) {
-      await activitiesService.addActivity({
-        type: 'task_completed',
-        title: `Completed task: ${updatedTask.title}`,
-        description: updatedTask.description,
-        related_task_id: updatedTask.id,
-        related_grow_id: updatedTask.grow_id,
-      });
+      await activitiesService.trackTaskCompleted(updatedTask.id, updatedTask.title);
     }
     
     return updatedTask;
@@ -168,5 +181,24 @@ export class TasksService extends APIClient {
       .eq('completed', true);
       
     if (error) throw error;
+  }
+
+  async checkOverdueTasks(): Promise<void> {
+    const session = await this.requireAuth();
+    const now = new Date().toISOString();
+    
+    const { data: tasks, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('completed', false)
+      .lt('due_date', now);
+    
+    if (error) throw this.handleError(error);
+    
+    // Send notifications for overdue tasks
+    for (const task of tasks) {
+      await notificationsService.notifyTaskOverdue(task.id, task.title);
+    }
   }
 } 

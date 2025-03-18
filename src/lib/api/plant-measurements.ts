@@ -2,6 +2,12 @@ import { APIClient } from './client';
 import type { PlantMeasurement, PlantMeasurementInsert } from '@/types/common';
 import { supabase } from '@/lib/supabase';
 import type { PostgrestResponse } from '@supabase/supabase-js';
+import { ActivitiesService } from './activities';
+import { NotificationsService } from './notifications';
+import { Database } from '@/types/database';
+
+const activitiesService = new ActivitiesService();
+const notificationsService = new NotificationsService();
 
 export class PlantMeasurementsService extends APIClient {
   async listMeasurements(
@@ -60,17 +66,102 @@ export class PlantMeasurementsService extends APIClient {
   async addMeasurement(data: Omit<PlantMeasurementInsert, 'user_id'>): Promise<PlantMeasurement> {
     const session = await this.requireAuth();
     
-    const { data: newMeasurement, error } = await supabase
+    const { data: measurement, error } = await supabase
       .from('plant_measurements')
-      .insert({
+      .insert([{
         ...data,
         user_id: session.user.id,
-      })
+      }])
       .select()
       .single();
+    
+    if (error) throw this.handleError(error);
+    
+    // Track measurement activity
+    await activitiesService.trackPlantMeasurement(data.plant_id, data.plant_name || '');
+    
+    // Check for growth milestones
+    await this.checkGrowthMilestones(data.plant_id);
+    
+    return measurement;
+  }
+
+  private async checkGrowthMilestones(plantId: string): Promise<void> {
+    const session = await this.requireAuth();
+    
+    // Get the plant details
+    const { data: plant } = await supabase
+      .from('plants')
+      .select('*')
+      .eq('id', plantId)
+      .eq('user_id', session.user.id)
+      .single();
+    
+    if (!plant) return;
+    
+    // Get all measurements for this plant
+    const { data: measurements } = await supabase
+      .from('plant_measurements')
+      .select('*')
+      .eq('plant_id', plantId)
+      .order('measured_at', { ascending: true });
+    
+    if (!measurements || measurements.length < 2) return;
+    
+    const latestMeasurement = measurements[measurements.length - 1];
+    const previousMeasurement = measurements[measurements.length - 2];
+    
+    // Check height milestones
+    if (latestMeasurement.height && previousMeasurement.height) {
+      const heightGrowth = latestMeasurement.height - previousMeasurement.height;
+      const heightGrowthPercent = (heightGrowth / previousMeasurement.height) * 100;
       
-    if (error) throw error;
-    return newMeasurement as PlantMeasurement;
+      if (heightGrowthPercent >= 25) {
+        await notificationsService.notifyGrowthMilestone(
+          plantId,
+          plant.name,
+          `Height increased by ${Math.round(heightGrowthPercent)}%`
+        );
+      }
+      
+      // Check absolute height milestones (every 30cm)
+      const heightMilestone = Math.floor(latestMeasurement.height / 30) * 30;
+      const previousHeightMilestone = Math.floor(previousMeasurement.height / 30) * 30;
+      
+      if (heightMilestone > previousHeightMilestone) {
+        await notificationsService.notifyGrowthMilestone(
+          plantId,
+          plant.name,
+          `Reached ${heightMilestone}cm in height`
+        );
+      }
+    }
+    
+    // Check leaf count milestones
+    if (latestMeasurement.leaf_count && previousMeasurement.leaf_count) {
+      const leafGrowth = latestMeasurement.leaf_count - previousMeasurement.leaf_count;
+      
+      if (leafGrowth >= 5) {
+        await notificationsService.notifyGrowthMilestone(
+          plantId,
+          plant.name,
+          `Grew ${leafGrowth} new leaves`
+        );
+      }
+    }
+    
+    // Check health score improvements
+    if (latestMeasurement.health_score && previousMeasurement.health_score) {
+      const healthImprovement = latestMeasurement.health_score - previousMeasurement.health_score;
+      
+      if (healthImprovement >= 20) {
+        await notificationsService.notifyGrowthMilestone(
+          plantId,
+          plant.name,
+          `Health score improved by ${Math.round(healthImprovement)} points`
+        );
+      }
+    }
   }
 
   async updateMeasurement(
@@ -122,7 +213,9 @@ export class PlantMeasurementsService extends APIClient {
   async getMeasurementStats(plantId: string): Promise<{
     totalMeasurements: number;
     averageHeight?: number;
-    heightGrowthRate?: number; // cm per day
+    heightGrowthRate?: number;
+    averageHealthScore?: number;
+    averageLeafCount?: number;
     lastWatering?: Date;
     totalWaterAmount: number;
   }> {
@@ -130,7 +223,7 @@ export class PlantMeasurementsService extends APIClient {
     
     const { data: measurements, error } = await supabase
       .from('plant_measurements')
-      .select('height, water_amount, measured_at')
+      .select('height, water_amount, measured_at, health_score, leaf_count, growth_rate')
       .eq('plant_id', plantId)
       .eq('user_id', session.user.id)
       .order('measured_at', { ascending: true });
@@ -152,23 +245,24 @@ export class PlantMeasurementsService extends APIClient {
       .map(m => m.water_amount)
       .filter((w): w is number => w != null);
 
-    // Calculate growth rate using first and last height measurements
-    let heightGrowthRate: number | undefined;
-    if (heights.length >= 2) {
-      const firstHeight = heights[0];
-      const lastHeight = heights[heights.length - 1];
-      const daysDiff = (
-        new Date(measurements[measurements.length - 1].measured_at).getTime() -
-        new Date(measurements[0].measured_at).getTime()
-      ) / (1000 * 60 * 60 * 24);
-      
-      heightGrowthRate = (lastHeight - firstHeight) / daysDiff;
-    }
+    const healthScores = measurements
+      .map(m => m.health_score)
+      .filter((h): h is number => h != null);
+
+    const leafCounts = measurements
+      .map(m => m.leaf_count)
+      .filter((l): l is number => l != null);
+
+    // Use the automatically calculated growth rate from the database
+    const latestMeasurement = measurements[measurements.length - 1];
+    const heightGrowthRate = latestMeasurement?.growth_rate;
 
     return {
       totalMeasurements: measurements.length,
       averageHeight: heights.length ? heights.reduce((a, b) => a + b) / heights.length : undefined,
       heightGrowthRate,
+      averageHealthScore: healthScores.length ? healthScores.reduce((a, b) => a + b) / healthScores.length : undefined,
+      averageLeafCount: leafCounts.length ? leafCounts.reduce((a, b) => a + b) / leafCounts.length : undefined,
       lastWatering: measurements.find(m => m.water_amount)?.measured_at,
       totalWaterAmount: waterAmounts.reduce((a, b) => a + b, 0),
     };

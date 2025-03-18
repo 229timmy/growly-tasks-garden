@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Bell, Search, Settings, LogOut } from "lucide-react";
+import { Search, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "../ThemeToggle";
 import { useAuth } from "@/contexts/auth/AuthContext";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -101,11 +102,7 @@ export function Header({ isSidebarOpen, toggleSidebar }: HeaderProps) {
         
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-          </Button>
+          <NotificationBell />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

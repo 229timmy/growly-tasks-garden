@@ -1,4 +1,9 @@
 import { supabase } from '@/lib/supabase';
+import { APIClient } from './client';
+import { NotificationsService } from './notifications';
+import type { Database } from '@/types/database';
+
+const notificationsService = new NotificationsService();
 
 export interface EnvironmentalData {
   date: string;
@@ -37,7 +42,7 @@ export interface EnvironmentalImpact {
   };
 }
 
-export class EnvironmentalAnalyticsService {
+export class EnvironmentalAnalyticsService extends APIClient {
   async getEnvironmentalData(growId?: string, timeRange?: { from: Date; to: Date }) {
     let query = supabase
       .from('environmental_data')
@@ -279,5 +284,90 @@ export class EnvironmentalAnalyticsService {
     }
 
     return optimalRanges;
+  }
+
+  async checkEnvironmentalAlerts(growId: string): Promise<void> {
+    const session = await this.requireAuth();
+    
+    // Get the grow's environmental targets
+    const { data: grow } = await supabase
+      .from('grows')
+      .select('*')
+      .eq('id', growId)
+      .eq('user_id', session.user.id)
+      .single();
+    
+    if (!grow) return;
+    
+    // Get the latest environmental readings
+    const { data: readings } = await supabase
+      .from('environmental_readings')
+      .select('*')
+      .eq('grow_id', growId)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (!readings) return;
+    
+    // Check temperature
+    if (grow.target_temperature) {
+      const tempDiff = Math.abs(readings.temperature - grow.target_temperature);
+      const tempThreshold = 5; // 5 degrees variance threshold
+      
+      if (tempDiff > tempThreshold) {
+        await notificationsService.notifyEnvironmentalAlert(
+          growId,
+          'Temperature',
+          readings.temperature,
+          grow.target_temperature
+        );
+      }
+    }
+    
+    // Check humidity
+    if (grow.target_humidity) {
+      const humidityDiff = Math.abs(readings.humidity - grow.target_humidity);
+      const humidityThreshold = 10; // 10% variance threshold
+      
+      if (humidityDiff > humidityThreshold) {
+        await notificationsService.notifyEnvironmentalAlert(
+          growId,
+          'Humidity',
+          readings.humidity,
+          grow.target_humidity
+        );
+      }
+    }
+    
+    // Check soil moisture if available
+    if (readings.soil_moisture && grow.target_soil_moisture) {
+      const moistureDiff = Math.abs(readings.soil_moisture - grow.target_soil_moisture);
+      const moistureThreshold = 15; // 15% variance threshold
+      
+      if (moistureDiff > moistureThreshold) {
+        await notificationsService.notifyEnvironmentalAlert(
+          growId,
+          'Soil Moisture',
+          readings.soil_moisture,
+          grow.target_soil_moisture
+        );
+      }
+    }
+    
+    // Check light intensity if available
+    if (readings.light_intensity && grow.target_light_intensity) {
+      const lightDiff = Math.abs(readings.light_intensity - grow.target_light_intensity);
+      const lightThreshold = 1000; // 1000 lux variance threshold
+      
+      if (lightDiff > lightThreshold) {
+        await notificationsService.notifyEnvironmentalAlert(
+          growId,
+          'Light Intensity',
+          readings.light_intensity,
+          grow.target_light_intensity
+        );
+      }
+    }
   }
 } 

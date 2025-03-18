@@ -33,6 +33,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 const measurementSchema = z.object({
   plant_id: z.string().min(1, 'Plant is required'),
   height: z.number().min(0, 'Height must be a positive number'),
+  health_score: z.number().min(0).max(5).optional(),
+  leaf_count: z.number().min(0).optional(),
   ph_level: z.number().min(0).max(14).optional(),
   notes: z.string().optional(),
   measured_at: z.string().optional().default(() => new Date().toISOString()),
@@ -68,6 +70,8 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
     defaultValues: {
       plant_id: plantId || '',
       height: undefined,
+      health_score: undefined,
+      leaf_count: undefined,
       ph_level: undefined,
       notes: '',
       measured_at: new Date().toISOString(),
@@ -150,6 +154,8 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
       ...form.getValues(),
       plant_id: '', // Reset plant selection
       height: undefined, // Reset height
+      health_score: undefined, // Reset health score
+      leaf_count: undefined, // Reset leaf count
       ph_level: undefined, // Reset pH
       notes: '', // Reset notes
     });
@@ -256,6 +262,63 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
               </FormItem>
             )}
           />
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="health_score"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Health Score (0-5)</FormLabel>
+                  <FormDescription>
+                    Rate the overall health of the plant
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="5"
+                      placeholder="Enter health score"
+                      value={field.value ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === '' ? undefined : parseFloat(value));
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="leaf_count"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Leaf Count</FormLabel>
+                  <FormDescription>
+                    Count the total number of leaves
+                  </FormDescription>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="Enter leaf count"
+                      value={field.value ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === '' ? undefined : parseInt(value));
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}

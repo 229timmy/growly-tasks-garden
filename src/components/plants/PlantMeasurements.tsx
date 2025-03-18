@@ -120,6 +120,30 @@ export function PlantMeasurements({ plantId }: PlantMeasurementsProps) {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Health Score</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats?.averageHealthScore
+                ? `${stats.averageHealthScore.toFixed(1)}/5`
+                : 'N/A'}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average Leaf Count</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {stats?.averageLeafCount
+                ? Math.round(stats.averageLeafCount)
+                : 'N/A'}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {heightData && heightData.length > 0 && (
@@ -157,6 +181,9 @@ export function PlantMeasurements({ plantId }: PlantMeasurementsProps) {
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Height</TableHead>
+                <TableHead>Health Score</TableHead>
+                <TableHead>Leaf Count</TableHead>
+                <TableHead>Growth Rate</TableHead>
                 <TableHead>Water</TableHead>
                 <TableHead>Nutrients</TableHead>
                 <TableHead>pH</TableHead>
@@ -171,6 +198,15 @@ export function PlantMeasurements({ plantId }: PlantMeasurementsProps) {
                   </TableCell>
                   <TableCell>
                     {measurement.height ? `${measurement.height} cm` : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {measurement.health_score ? `${measurement.health_score}/5` : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {measurement.leaf_count || '-'}
+                  </TableCell>
+                  <TableCell>
+                    {measurement.growth_rate ? `${measurement.growth_rate.toFixed(1)} cm/day` : '-'}
                   </TableCell>
                   <TableCell>
                     {measurement.water_amount ? `${measurement.water_amount} ml` : '-'}

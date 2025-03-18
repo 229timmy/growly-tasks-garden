@@ -6,6 +6,12 @@ import { SignUpForm } from '@/components/auth/SignUpForm';
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
 import Layout from '@/components/layout/Layout';
 import LandingPage from '@/pages/landing';
+import { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/sonner';
+import { ThemeProvider } from '@/contexts/theme/ThemeContext';
+import { AuthProvider } from '@/contexts/auth/AuthContext';
+import { NotificationChecker } from '@/lib/services/notification-checker';
 
 // Pages
 import Dashboard from '@/pages/dashboard';
@@ -22,41 +28,59 @@ import Settings from '@/pages/settings';
 import Help from '@/pages/help';
 import Harvests from '@/pages/harvests';
 
+const queryClient = new QueryClient();
+const notificationChecker = new NotificationChecker();
+
 function App() {
+  useEffect(() => {
+    // Start checking for notifications when the app loads
+    notificationChecker.start();
+    
+    // Clean up when the app unmounts
+    return () => {
+      notificationChecker.stop();
+    };
+  }, []);
+
   return (
-    <AppProviders>
-      <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignUpForm />} />
-          <Route path="/reset-password" element={<ResetPasswordForm />} />
-          
-          {/* Protected Routes */}
-          <Route path="/app" element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to="/app/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="grows" element={<Grows />} />
-            <Route path="grows/:id" element={<GrowDetails />} />
-            <Route path="tasks" element={<Tasks />} />
-            <Route path="tasks/new" element={<NewTask />} />
-            <Route path="plants" element={<Plants />} />
-            <Route path="plants/new" element={<NewPlant />} />
-            <Route path="plants/:id" element={<PlantDetail />} />
-            <Route path="plants/:id/edit" element={<EditPlant />} />
-            <Route path="harvests" element={<Harvests />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="help" element={<Help />} />
-          </Route>
-        </Routes>
-      </Router>
-    </AppProviders>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignUpForm />} />
+              <Route path="/reset-password" element={<ResetPasswordForm />} />
+              
+              {/* Protected Routes */}
+              <Route path="/app" element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<Navigate to="/app/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="grows" element={<Grows />} />
+                <Route path="grows/:id" element={<GrowDetails />} />
+                <Route path="tasks" element={<Tasks />} />
+                <Route path="tasks/new" element={<NewTask />} />
+                <Route path="plants" element={<Plants />} />
+                <Route path="plants/new" element={<NewPlant />} />
+                <Route path="plants/:id" element={<PlantDetail />} />
+                <Route path="plants/:id/edit" element={<EditPlant />} />
+                <Route path="harvests" element={<Harvests />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="help" element={<Help />} />
+              </Route>
+            </Routes>
+            <Toaster />
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
