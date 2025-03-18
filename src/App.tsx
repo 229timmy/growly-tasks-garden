@@ -9,7 +9,7 @@ import LandingPage from '@/pages/landing';
 import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
-import { ThemeProvider } from '@/contexts/theme/ThemeContext';
+import { ThemeProvider } from '@/hooks/use-theme';
 import { AuthProvider } from '@/contexts/auth/AuthContext';
 import { NotificationChecker } from '@/lib/services/notification-checker';
 
@@ -34,7 +34,11 @@ const notificationChecker = new NotificationChecker();
 function App() {
   useEffect(() => {
     // Start checking for notifications when the app loads
-    notificationChecker.start();
+    const startNotificationChecker = async () => {
+      await notificationChecker.start();
+    };
+    
+    startNotificationChecker().catch(console.error);
     
     // Clean up when the app unmounts
     return () => {

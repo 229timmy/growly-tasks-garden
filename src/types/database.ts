@@ -139,6 +139,7 @@ export interface Database {
           name: string
           description: string | null
           status: string
+          stage: 'seedling' | 'vegetative' | 'flowering' | 'harvesting'
           start_date: string
           end_date: string | null
           target_temperature: number | null
@@ -154,6 +155,7 @@ export interface Database {
           name: string
           description?: string | null
           status?: string
+          stage?: 'seedling' | 'vegetative' | 'flowering' | 'harvesting'
           start_date?: string
           end_date?: string | null
           target_temperature?: number | null
@@ -169,6 +171,7 @@ export interface Database {
           name?: string
           description?: string | null
           status?: string
+          stage?: 'seedling' | 'vegetative' | 'flowering' | 'harvesting'
           start_date?: string
           end_date?: string | null
           target_temperature?: number | null

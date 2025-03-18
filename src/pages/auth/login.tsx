@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import { motion } from 'framer-motion';
-import { Leaf, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,7 +41,7 @@ export default function LoginPage() {
         className="mb-8 text-center"
       >
         <div className="inline-flex items-center justify-center p-4 mb-2 rounded-full bg-primary/10">
-          <Leaf className="w-8 h-8 text-primary" />
+          <img src="/path23.svg" alt="Logo" className="w-8 h-8" />
         </div>
         <h1 className="text-2xl font-bold">Grow Manager</h1>
         <p className="text-sm text-muted-foreground">Sign in to your account</p>

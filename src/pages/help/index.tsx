@@ -31,6 +31,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ContactForm } from '@/components/help/ContactForm';
 
 export default function Help() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -110,6 +111,7 @@ export default function Help() {
           <TabsTrigger value="features">Features Guide</TabsTrigger>
           <TabsTrigger value="faq">Frequently Asked Questions</TabsTrigger>
           <TabsTrigger value="contact">Contact Support</TabsTrigger>
+          <TabsTrigger value="report-issue">Report Issue</TabsTrigger>
         </TabsList>
         
         {/* Features Guide Content */}
@@ -585,6 +587,21 @@ export default function Help() {
               </Card>
             </div>
           </div>
+        </TabsContent>
+        
+        {/* Report Issue Content */}
+        <TabsContent value="report-issue">
+          <Card>
+            <CardHeader>
+              <CardTitle>Report an Issue</CardTitle>
+              <CardDescription>
+                Use this form to report any issues you encounter while using the application. We'll get back to you as soon as possible.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ContactForm />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

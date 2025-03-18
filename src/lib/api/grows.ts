@@ -21,7 +21,6 @@ export class GrowsService extends APIClient {
     offset?: number;
   }): Promise<Grow[]> {
     const session = await this.requireAuth();
-    console.log('Fetching grows for user:', session.user.id);
     
     let query = supabase
       .from('grows')
@@ -38,12 +37,15 @@ export class GrowsService extends APIClient {
     }
     
     if (filters?.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+      query = query.range(
+        filters.offset,
+        filters.offset + (filters.limit || 10) - 1
+      );
     }
     
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    return data as Grow[];
   }
 
   async getGrow(id: string): Promise<Grow> {

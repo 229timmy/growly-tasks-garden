@@ -204,44 +204,6 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* Testimonials Section */}
-      <section className="py-24 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 border-primary">Features</Badge>
-            <h2 className="text-4xl font-bold mb-4 text-foreground">
-              Trusted by Growers Worldwide
-            </h2>
-            <p className="text-xl text-foreground max-w-2xl mx-auto">
-              See what our users are saying about their experience
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-card p-8 rounded-xl border border-border shadow-md"
-              >
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mr-4">
-                    <span className="font-bold text-primary">{testimonial.name.charAt(0)}</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-foreground">{testimonial.name}</h4>
-                    <p className="text-sm text-foreground/80">{testimonial.role}</p>
-                  </div>
-                </div>
-                <p className="italic text-foreground/90">{testimonial.quote}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Pricing Section */}
       <section id="pricing" className="py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -423,24 +385,6 @@ const features = [
     description: 'Optimize your growing conditions based on data-driven recommendations.',
     icon: Zap,
   },
-];
-
-const testimonials = [
-  {
-    name: 'Sarah Johnson',
-    role: 'Home Gardener',
-    quote: 'Grow Manager has transformed my home garden. The task reminders ensure I never forget to water or fertilize my plants.'
-  },
-  {
-    name: 'Michael Chen',
-    role: 'Commercial Grower',
-    quote: 'The analytics features have helped us optimize our growing conditions and increase yields by over 20%.'
-  },
-  {
-    name: 'Emily Rodriguez',
-    role: 'Urban Farmer',
-    quote: 'I love how easy it is to track multiple grows simultaneously. The interface is intuitive and the insights are invaluable.'
-  }
 ];
 
 const pricingTiers = [
