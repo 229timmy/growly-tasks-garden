@@ -16,8 +16,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChangePasswordForm } from '@/components/auth/ChangePasswordForm';
 import type { ProfileUpdate } from '@/types/common';
+import { Link } from 'react-router-dom';
+import { Check } from 'lucide-react';
+import { StripeService } from '@/lib/api/stripe';
+import { supabase } from '@/lib/supabase';
 
 const profilesService = new ProfilesService();
+const stripeService = new StripeService();
 
 // Store notification preferences in localStorage
 const NOTIFICATION_PREFERENCES_KEY = 'notification_preferences';
@@ -128,6 +133,53 @@ export default function Settings() {
     toast.success(`${key} notifications ${enabled ? 'enabled' : 'disabled'}`);
   };
 
+  const handleUpgradeClick = async (planName: string) => {
+    try {
+      // Get the price ID for the selected plan
+      const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('stripe_price_id')
+        .eq('name', planName.toLowerCase())
+        .single();
+
+      if (!planData?.stripe_price_id) {
+        toast.error('Invalid plan selected');
+        return;
+      }
+
+      // Create checkout session
+      const { url } = await stripeService.createCheckoutSession(
+        user!.id,
+        planData.stripe_price_id,
+        window.location.href
+      );
+
+      // Redirect to checkout
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast.error('Failed to start checkout process');
+    }
+  };
+
+  const handleManageBilling = async () => {
+    try {
+      const { url } = await stripeService.createPortalSession(
+        user!.id,
+        window.location.href
+      );
+
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Error opening billing portal:', error);
+      toast.error('Failed to open billing portal');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -150,6 +202,7 @@ export default function Settings() {
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
         </TabsList>
         
         <TabsContent value="profile">
@@ -325,11 +378,139 @@ export default function Settings() {
                   />
                 </div>
               </div>
-              <div className="flex justify-between">
-                <div className="flex items-center space-x-2">
-                  <p className="text-sm font-medium">User Tier:</p>
-                  <span className="text-sm capitalize">{tier}</span>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="subscription">
+          <Card>
+            <CardHeader>
+              <CardTitle>Subscription Details</CardTitle>
+              <CardDescription>
+                View and manage your subscription plan
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                  <div>
+                    <h3 className="text-xl font-semibold capitalize mb-1">{tier} Plan</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {tier === 'free' && 'Basic features for hobbyists and beginners'}
+                      {tier === 'premium' && 'Advanced features for serious growers'}
+                      {tier === 'enterprise' && 'Full features for professional operations'}
+                    </p>
+                  </div>
+                  {tier === 'free' && (
+                    <Button asChild onClick={() => handleUpgradeClick('premium')}>
+                      <Link to="#">Upgrade Plan</Link>
+                    </Button>
+                  )}
                 </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold">Your Plan Features:</h4>
+                  <ul className="space-y-3">
+                    {tier === 'free' && (
+                      <>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          3 active grows
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Basic tracking
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Limited task management
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Standard measurements
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Community support
+                        </li>
+                      </>
+                    )}
+                    {tier === 'premium' && (
+                      <>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          10 grows
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Advanced tracking
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Full task management
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Batch measurements
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Environmental alerts
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Priority support
+                        </li>
+                      </>
+                    )}
+                    {tier === 'enterprise' && (
+                      <>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Unlimited grows
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Custom features
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          White labeling
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          API access
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Dedicated support
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Advanced analytics
+                        </li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+
+                {tier !== 'free' && (
+                  <div className="pt-4 border-t">
+                    <h4 className="text-sm font-semibold mb-2">Subscription Management</h4>
+                    <div className="flex gap-4">
+                      <Button variant="outline" onClick={handleManageBilling}>
+                        Manage Billing
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="text-destructive"
+                        onClick={handleManageBilling}
+                      >
+                        Cancel Subscription
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

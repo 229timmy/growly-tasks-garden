@@ -50,7 +50,20 @@
 - ✅ CRUD operations for tasks
 - ✅ Activity tracking system
 
-#### 6. Grow Management
+#### 6. Subscription Management
+- ✅ Stripe integration
+- ✅ Subscription plans configuration
+- ✅ Webhook handling for subscription events
+  - ✅ Subscription creation
+  - ✅ Subscription updates
+  - ✅ Subscription cancellation
+  - ✅ Trial periods
+  - ✅ Failed payments
+- ✅ User tier management
+- ✅ Subscription status tracking
+- ✅ Billing portal integration
+
+#### 7. Grow Management
 - ✅ Grow listing page
 - ✅ Grow details page
 - ✅ Create new grow dialog
@@ -58,7 +71,7 @@
 - ✅ Plant count display
 - ✅ Environmental data integration
 
-#### 7. Plant Management
+#### 8. Plant Management
 - ✅ Plants listing page with filtering
 - ✅ Plant detail views
 - ✅ Plant measurements tracking
@@ -77,13 +90,13 @@
   - ✅ Batch care activities for multiple plants
   - ✅ Activity history and statistics
 
-#### 8. Environmental Data
+#### 9. Environmental Data
 - ✅ Environmental data storage schema
 - ✅ Environmental data collection
 - ✅ Basic visualization in GrowCards
 - ✅ Temperature and humidity tracking
 
-#### 9. Error Handling
+#### 10. Error Handling
 - ✅ Reusable ErrorBoundary component
 - ✅ Specialized QueryErrorBoundary for API errors
 - ✅ Error boundary integration with React Query
@@ -107,6 +120,12 @@
 - 🚧 Yield tracking
 - 🚧 Growth pattern analysis
 - 🚧 Environmental impact analysis
+
+#### 4. Subscription Features
+- 🚧 Feature access control based on tier
+- 🚧 Subscription renewal handling
+- 🚧 Usage limits enforcement
+- 🚧 Upgrade/downgrade flows
 
 ### ⬜ Planned Features
 
@@ -138,23 +157,29 @@
 
 ## Next Steps (Priority Order)
 
-1. Complete the Tasks Management System
+1. Complete Subscription Management System
+   - Implement feature access control
+   - Add subscription renewal handling
+   - Set up usage limits enforcement
+   - Create upgrade/downgrade flows
+
+2. Complete the Tasks Management System
    - Implement recurring tasks
    - Add task categories
    - Create task templates
    - Set up reminders
 
-2. Enhance Environmental Monitoring
+3. Enhance Environmental Monitoring
    - Add real-time data collection
    - Implement alerts system
    - Create detailed visualization
 
-3. Develop Analytics System
+4. Develop Analytics System
    - Build comprehensive dashboards
    - Implement reporting
    - Add export functionality
 
-4. Improve Mobile Experience
+5. Improve Mobile Experience
    - Optimize touch interactions
    - Enhance responsive design
    - Add offline capabilities
@@ -166,28 +191,23 @@
 - Basic tracking
 - Limited task management
 - Standard measurements
+- Community support
 
-### Pro Tier ($9/month)
-- 6 grows
+### Premium Tier ($19/month)
+- 10 grows
 - Advanced tracking
 - Full task management
 - Batch measurements
-- Batch plant care activities
-- Basic analytics
-
-### Master Tier ($19/month)
-- 10 grows
-- Advanced analytics
 - Environmental alerts
 - Priority support
-- All premium features
 
-### Commercial Tier ($39/month)
+### Enterprise Tier ($49/month)
 - Unlimited grows
 - Custom features
 - White labeling
 - API access
 - Dedicated support
+- Advanced analytics
 
 ## Quality Standards
 
