@@ -1,4 +1,4 @@
-# Analytics Page Plan for Master and Commercial Tiers
+# Analytics Page Plan for Premium and Enterprise Tiers
 
 ## Core Analytics Structure
 
@@ -12,7 +12,7 @@ The analytics page will be organized into several key sections:
 
 ## Feature Breakdown by Tier
 
-### Master Tier Features
+### Premium Tier Features
 
 #### Basic Growth Analytics
 - Growth rate tracking over time
@@ -27,7 +27,7 @@ The analytics page will be organized into several key sections:
 
 #### Harvest Metrics
 - Yield tracking (total and per plant)
-- Basic quality metrics visualization (density, aroma, potency)
+- Basic quality metrics visualization
 - Harvest timing analysis
 
 #### Historical Performance
@@ -38,7 +38,7 @@ The analytics page will be organized into several key sections:
 - CSV export of basic metrics
 - PDF reports of individual grow performance
 
-### Commercial Tier Features (includes all Master features plus)
+### Enterprise Tier Features (includes all Premium features plus)
 
 #### Advanced Growth Analytics
 - Multi-variable analysis (correlating multiple factors)
@@ -112,7 +112,7 @@ To ensure insights are actionable without relying on AI:
 
 ## KPI Selection Framework
 
-For the Commercial tier's customizable dashboard with KPI selection, we'll implement:
+For the Enterprise tier's customizable dashboard with KPI selection, we'll implement:
 
 1. **Categorized Metrics**
    - Growth metrics (height, node development, etc.)
@@ -149,6 +149,6 @@ To generate insights without AI:
 3. **Rule Engine**
    - Apply predefined business rules to generate recommendations
    - Update rules based on new research and best practices
-   - Allow Commercial tier users to define custom rules
+   - Allow Enterprise tier users to define custom rules
 
-This tiered approach provides valuable analytics to Master tier users while reserving the most powerful business-oriented features for Commercial users, creating a clear upgrade path for serious growers. The system leverages statistical methods and rule-based approaches to deliver actionable insights without requiring AI, making it more predictable and explainable. 
+This tiered approach provides valuable analytics to Premium tier users while reserving the most powerful business-oriented features for Enterprise users, creating a clear upgrade path for serious growers. The system leverages statistical methods and rule-based approaches to deliver actionable insights without requiring AI, making it more predictable and explainable. 

@@ -166,6 +166,12 @@ export default function Settings() {
 
   const handleManageBilling = async () => {
     try {
+      // For users without an active subscription, redirect to upgrade flow
+      if (tier === 'free') {
+        await handleUpgradeClick('premium');
+        return;
+      }
+
       const { url } = await stripeService.createPortalSession(
         user!.id,
         window.location.href
@@ -174,9 +180,15 @@ export default function Settings() {
       if (url) {
         window.location.href = url;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error opening billing portal:', error);
-      toast.error('Failed to open billing portal');
+      if (error?.message === 'No Stripe customer found') {
+        // If no customer record exists, redirect to upgrade flow
+        toast.info('Please start a subscription to access billing settings');
+        await handleUpgradeClick('premium');
+      } else {
+        toast.error('Failed to open billing portal');
+      }
     }
   };
 
@@ -415,7 +427,11 @@ export default function Settings() {
                       <>
                         <li className="flex items-center text-sm">
                           <Check className="h-4 w-4 text-green-500 mr-2" />
-                          3 active grows
+                          1 active grow
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          4 plants per grow
                         </li>
                         <li className="flex items-center text-sm">
                           <Check className="h-4 w-4 text-green-500 mr-2" />
@@ -439,7 +455,11 @@ export default function Settings() {
                       <>
                         <li className="flex items-center text-sm">
                           <Check className="h-4 w-4 text-green-500 mr-2" />
-                          10 grows
+                          4 active grows
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          6 plants per grow
                         </li>
                         <li className="flex items-center text-sm">
                           <Check className="h-4 w-4 text-green-500 mr-2" />
@@ -467,7 +487,11 @@ export default function Settings() {
                       <>
                         <li className="flex items-center text-sm">
                           <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Unlimited grows
+                          10 active grows
+                        </li>
+                        <li className="flex items-center text-sm">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          20 plants per grow
                         </li>
                         <li className="flex items-center text-sm">
                           <Check className="h-4 w-4 text-green-500 mr-2" />
@@ -501,12 +525,20 @@ export default function Settings() {
                       <Button variant="outline" onClick={handleManageBilling}>
                         Manage Billing
                       </Button>
+                      {tier === 'premium' && (
+                        <Button 
+                          variant="outline" 
+                          onClick={() => handleUpgradeClick('enterprise')}
+                        >
+                          Upgrade to Enterprise
+                        </Button>
+                      )}
                       <Button 
                         variant="outline" 
                         className="text-destructive"
                         onClick={handleManageBilling}
                       >
-                        Cancel Subscription
+                        Manage Subscription
                       </Button>
                     </div>
                   </div>

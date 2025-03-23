@@ -62,6 +62,8 @@
 - ✅ User tier management
 - ✅ Subscription status tracking
 - ✅ Billing portal integration
+- ✅ Feature access control based on tier
+- ✅ Usage limits enforcement
 
 #### 7. Grow Management
 - ✅ Grow listing page
@@ -89,6 +91,10 @@
   - ✅ Individual plant care tracking
   - ✅ Batch care activities for multiple plants
   - ✅ Activity history and statistics
+- ✅ Plant limit enforcement per subscription tier
+  - ✅ Tier-based plant limits
+  - ✅ Grow-specific plant limits
+  - ✅ Upgrade prompts when limits reached
 
 #### 9. Environmental Data
 - ✅ Environmental data storage schema
@@ -122,9 +128,9 @@
 - 🚧 Environmental impact analysis
 
 #### 4. Subscription Features
-- 🚧 Feature access control based on tier
+- ✅ Feature access control based on tier
+- ✅ Usage limits enforcement
 - 🚧 Subscription renewal handling
-- 🚧 Usage limits enforcement
 - 🚧 Upgrade/downgrade flows
 
 ### ⬜ Planned Features
@@ -154,6 +160,7 @@
 3. **Test Coverage**: Unit and integration tests needed
 4. **Performance**: Need to implement proper data pagination and caching
 5. **Mobile Experience**: Some features need better mobile optimization
+6. ~~**Subscription Limits**: Plant limits not enforced correctly~~ ✅ Fixed
 
 ## Next Steps (Priority Order)
 

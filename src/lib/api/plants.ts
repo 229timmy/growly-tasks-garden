@@ -2,10 +2,14 @@ import { APIClient } from './client';
 import type { Database } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { StorageService, PhotoMetadata } from './storage';
+import type { Tables } from '@/types/common';
 
 type Plant = Database['public']['Tables']['plants']['Row'];
 type PlantInsert = Database['public']['Tables']['plants']['Insert'];
 type PlantUpdate = Database['public']['Tables']['plants']['Update'];
+type Grow = Database['public']['Tables']['grows']['Row'];
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type SubscriptionPlan = Database['public']['Tables']['subscription_plans']['Row'];
 
 export interface PlantPhoto {
   id: string;
@@ -75,53 +79,79 @@ export class PlantsService extends APIClient {
     }
   }
 
-  async createPlant(data: Omit<PlantInsert, 'user_id'>): Promise<Plant> {
+  private async checkPlantLimit(growId: string): Promise<boolean> {
+    const session = await this.requireAuth();
+
+    // Get user's profile with tier
+    const profile = await this.query<Profile>(() =>
+      supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', session.user.id)
+        .single()
+    );
+
+    // Get tier limits from subscription plans
+    const tierLimits = await this.query<{ max_plants_per_grow: number }>(() =>
+      supabase
+        .from('subscription_plans')
+        .select('max_plants_per_grow')
+        .eq('name', profile.tier)
+        .single()
+    );
+
+    // Get current plant count for this grow - don't require data for this query
+    const result = await this.query<{ count: number }>(
+      () =>
+        supabase
+          .from('plants')
+          .select('*', { count: 'exact', head: true })
+          .eq('grow_id', growId),
+      false // Set requireData to false for this query
+    );
+
+    const count = result?.count ?? 0;
+    return count < tierLimits.max_plants_per_grow;
+  }
+
+  async createPlant(data: PlantInsert): Promise<Plant> {
     const session = await this.requireAuth();
     
-    return this.query(() =>
+    const canAddPlant = await this.checkPlantLimit(data.grow_id);
+    if (!canAddPlant) {
+      throw new Error('Plant limit reached for this grow. Please upgrade your plan to add more plants.');
+    }
+
+    return this.query<Plant>(() =>
       supabase
         .from('plants')
         .insert({
           ...data,
-          user_id: session.user.id,
+          user_id: session.user.id
         })
-        .select()
+        .select('*')
         .single()
     );
   }
 
   async updatePlant(id: string, data: PlantUpdate): Promise<Plant> {
-    const session = await this.requireAuth();
-    
-    return this.query(() =>
+    return this.query<Plant>(() =>
       supabase
         .from('plants')
         .update(data)
         .eq('id', id)
-        .eq('user_id', session.user.id)
-        .select()
+        .select('*')
         .single()
     );
   }
 
   async deletePlant(id: string): Promise<void> {
-    const session = await this.requireAuth();
-    
-    try {
-      // First delete all photos for this plant
-      await this.deleteAllPlantPhotos(id);
-      
-      // Then delete the plant
-      const { error } = await supabase
+    await this.query(() =>
+      supabase
         .from('plants')
         .delete()
         .eq('id', id)
-        .eq('user_id', session.user.id);
-      
-      if (error) throw error;
-    } catch (error) {
-      this.handleError(error);
-    }
+    );
   }
 
   async getPlantStats(): Promise<{

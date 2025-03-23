@@ -13,21 +13,33 @@ export class StripeService {
   async createCheckoutSession(userId: string, priceId: string, returnUrl: string) {
     try {
       // Get or create Stripe customer
-      const { data: customerData } = await this.supabase
+      const { data: customerData, error: customerError } = await this.supabase
         .from('stripe_customers')
         .select('stripe_customer_id')
         .eq('user_id', userId)
-        .single();
+        .single()
+        .throwOnError();
+
+      if (customerError) {
+        console.error('Error fetching customer:', customerError);
+        throw customerError;
+      }
 
       let stripeCustomerId = customerData?.stripe_customer_id;
 
       if (!stripeCustomerId) {
         // Get user email
-        const { data: userData } = await this.supabase
+        const { data: userData, error: userError } = await this.supabase
           .from('profiles')
           .select('email')
           .eq('id', userId)
-          .single();
+          .single()
+          .throwOnError();
+
+        if (userError) {
+          console.error('Error fetching user:', userError);
+          throw userError;
+        }
 
         // Create new Stripe customer
         const customer = await stripe.customers.create({
@@ -40,12 +52,18 @@ export class StripeService {
         stripeCustomerId = customer.id;
 
         // Save Stripe customer ID
-        await this.supabase
+        const { error: insertError } = await this.supabase
           .from('stripe_customers')
           .insert({
             user_id: userId,
             stripe_customer_id: customer.id
-          });
+          })
+          .throwOnError();
+
+        if (insertError) {
+          console.error('Error inserting customer:', insertError);
+          throw insertError;
+        }
       }
 
       // Create checkout session
@@ -60,10 +78,6 @@ export class StripeService {
         mode: 'subscription',
         success_url: `${returnUrl}?success=true`,
         cancel_url: `${returnUrl}?success=false`,
-        automatic_tax: { enabled: true },
-        customer_update: {
-          address: 'auto',
-        },
         billing_address_collection: 'required',
       });
 
@@ -77,11 +91,17 @@ export class StripeService {
   async createPortalSession(userId: string, returnUrl: string) {
     try {
       // Get Stripe customer
-      const { data: customerData } = await this.supabase
+      const { data: customerData, error: customerError } = await this.supabase
         .from('stripe_customers')
         .select('stripe_customer_id')
         .eq('user_id', userId)
-        .single();
+        .single()
+        .throwOnError();
+
+      if (customerError) {
+        console.error('Error fetching customer:', customerError);
+        throw customerError;
+      }
 
       if (!customerData?.stripe_customer_id) {
         throw new Error('No Stripe customer found');
@@ -90,7 +110,7 @@ export class StripeService {
       // Create portal session
       const session = await stripe.billingPortal.sessions.create({
         customer: customerData.stripe_customer_id,
-        return_url: returnUrl,
+        return_url: returnUrl
       });
 
       return { url: session.url };

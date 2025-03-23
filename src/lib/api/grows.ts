@@ -2,6 +2,7 @@ import { APIClient } from './client';
 import type { Database } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { ActivitiesService } from './activities';
+import { stripe } from '@/lib/stripe';
 
 type Grow = Database['public']['Tables']['grows']['Row'];
 type GrowInsert = Database['public']['Tables']['grows']['Insert'];
@@ -13,6 +14,41 @@ export class GrowsService extends APIClient {
   constructor() {
     super();
     this.activitiesService = new ActivitiesService();
+  }
+
+  private async checkGrowLimit(userId: string): Promise<void> {
+    // Get user's tier from profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('tier')
+      .eq('id', userId)
+      .single();
+
+    if (profileError) throw profileError;
+    if (!profile) throw new Error('User profile not found');
+
+    // Get the limits for this tier from subscription_plans
+    const { data: tierLimits, error: limitsError } = await supabase
+      .from('subscription_plans')
+      .select('max_grows')
+      .eq('name', profile.tier)
+      .single();
+
+    if (limitsError) throw limitsError;
+    if (!tierLimits) throw new Error('Tier limits not found');
+
+    // Get current grow count
+    const { count, error: countError } = await supabase
+      .from('grows')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (countError) throw countError;
+    if (count === null) throw new Error('Could not count grows');
+
+    if (count >= tierLimits.max_grows) {
+      throw new Error(`Grow limit reached for ${profile.tier} tier (${tierLimits.max_grows} grows)`);
+    }
   }
 
   async listGrows(filters?: {
@@ -65,6 +101,9 @@ export class GrowsService extends APIClient {
 
   async createGrow(data: Omit<GrowInsert, 'user_id'>): Promise<Grow> {
     const session = await this.requireAuth();
+    
+    // Check grow limit before creating
+    await this.checkGrowLimit(session.user.id);
     
     const { data: grow, error } = await supabase
       .from('grows')

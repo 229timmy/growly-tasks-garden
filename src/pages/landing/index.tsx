@@ -217,7 +217,7 @@ export default function LandingPage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             {pricingTiers.map((tier, index) => (
               <motion.div
                 key={tier.name}
@@ -391,52 +391,44 @@ const pricingTiers = [
   {
     name: 'Free',
     price: 0,
-    description: 'Perfect for hobbyists and beginners',
+    description: 'Basic features for hobbyists and beginners',
     features: [
-      '3 active grows',
+      '1 active grow',
+      '4 plants per grow',
       'Basic tracking',
       'Limited task management',
       'Standard measurements',
+      'Community support'
     ],
     featured: false
   },
   {
-    name: 'Pro',
-    price: 9,
-    description: 'For serious home growers',
+    name: 'Premium',
+    price: 19,
+    description: 'Advanced features for serious growers',
     features: [
-      '6 grows',
+      '4 active grows',
+      '6 plants per grow',
       'Advanced tracking',
       'Full task management',
       'Batch measurements',
-      'Batch care activities',
-      'Basic analytics',
+      'Environmental alerts',
+      'Priority support'
     ],
     featured: true
   },
   {
-    name: 'Master',
-    price: 19,
-    description: 'For dedicated enthusiasts',
+    name: 'Enterprise',
+    price: 49,
+    description: 'Full features for professional operations',
     features: [
-      '10 grows',
-      'Advanced analytics',
-      'Environmental alerts',
-      'Priority support',
-      'All premium features',
-    ],
-    featured: false
-  },
-  {
-    name: 'Commercial',
-    price: 39,
-    description: 'For professional operations',
-    features: [
-      'Unlimited grows',
+      '10 active grows',
+      '20 plants per grow',
       'Custom features',
       'White labeling',
       'API access',
       'Dedicated support',
+      'Advanced analytics'
     ],
     featured: false
   }
