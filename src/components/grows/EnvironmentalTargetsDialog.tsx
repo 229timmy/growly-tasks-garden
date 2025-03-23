@@ -29,9 +29,10 @@ export function EnvironmentalTargetsDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full sm:w-auto">
-          <Settings className="h-4 w-4 mr-2" />
-          Set Targets
+        <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9">
+          <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          <span className="hidden sm:inline">Set Targets</span>
+          <span className="sm:hidden">Targets</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">

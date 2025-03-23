@@ -17,8 +17,7 @@ export class StripeService {
         .from('stripe_customers')
         .select('stripe_customer_id')
         .eq('user_id', userId)
-        .single()
-        .throwOnError();
+        .maybeSingle();
 
       if (customerError) {
         console.error('Error fetching customer:', customerError);
@@ -33,17 +32,20 @@ export class StripeService {
           .from('profiles')
           .select('email')
           .eq('id', userId)
-          .single()
-          .throwOnError();
+          .single();
 
         if (userError) {
           console.error('Error fetching user:', userError);
           throw userError;
         }
 
+        if (!userData?.email) {
+          throw new Error('User email not found');
+        }
+
         // Create new Stripe customer
         const customer = await stripe.customers.create({
-          email: userData?.email,
+          email: userData.email,
           metadata: {
             user_id: userId
           }
@@ -54,14 +56,13 @@ export class StripeService {
         // Save Stripe customer ID
         const { error: insertError } = await this.supabase
           .from('stripe_customers')
-          .insert({
+          .upsert({
             user_id: userId,
             stripe_customer_id: customer.id
-          })
-          .throwOnError();
+          });
 
         if (insertError) {
-          console.error('Error inserting customer:', insertError);
+          console.error('Error saving customer:', insertError);
           throw insertError;
         }
       }
@@ -95,8 +96,7 @@ export class StripeService {
         .from('stripe_customers')
         .select('stripe_customer_id')
         .eq('user_id', userId)
-        .single()
-        .throwOnError();
+        .maybeSingle();
 
       if (customerError) {
         console.error('Error fetching customer:', customerError);

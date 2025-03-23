@@ -22,9 +22,10 @@ export function RecordEnvironmentalDataDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full sm:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Record Environment
+        <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3 h-8 sm:h-9">
+          <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          <span className="hidden sm:inline">Record Environment</span>
+          <span className="sm:hidden">Record</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
