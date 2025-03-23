@@ -20,9 +20,13 @@ import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { StripeService } from '@/lib/api/stripe';
 import { supabase } from '@/lib/supabase';
+import { GrowsService } from '@/lib/api/grows';
+import { PlantsService } from '@/lib/api/plants';
 
 const profilesService = new ProfilesService();
 const stripeService = new StripeService();
+const growsService = new GrowsService();
+const plantsService = new PlantsService();
 
 // Store notification preferences in localStorage
 const NOTIFICATION_PREFERENCES_KEY = 'notification_preferences';
@@ -39,15 +43,37 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [currentGrowCount, setCurrentGrowCount] = useState(0);
+  const [currentMaxPlants, setCurrentMaxPlants] = useState(0);
   const [notificationPreferences, setNotificationPreferences] = useState(() => {
     const saved = localStorage.getItem(NOTIFICATION_PREFERENCES_KEY);
     return saved ? JSON.parse(saved) : DEFAULT_NOTIFICATION_PREFERENCES;
   });
 
-  // Fetch user profile
+  // Fetch user profile and usage stats
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: () => profilesService.getCurrentProfile(),
+  });
+
+  // Fetch current grow count
+  useQuery({
+    queryKey: ['grows-count'],
+    queryFn: async () => {
+      if (!user) return;
+      const grows = await growsService.listGrows();
+      setCurrentGrowCount(grows.length);
+      
+      // Calculate max plants in any grow
+      let maxPlants = 0;
+      for (const grow of grows) {
+        const plants = await plantsService.listPlants({ growId: grow.id });
+        maxPlants = Math.max(maxPlants, plants.length);
+      }
+      setCurrentMaxPlants(maxPlants);
+      return grows.length;
+    },
+    enabled: !!user
   });
 
   // Update profile mutation
@@ -135,15 +161,34 @@ export default function Settings() {
 
   const handleUpgradeClick = async (planName: string) => {
     try {
+      // Show confirmation for downgrades
+      if (
+        (tier === 'enterprise' && ['premium', 'free'].includes(planName.toLowerCase())) ||
+        (tier === 'premium' && planName.toLowerCase() === 'free')
+      ) {
+        const confirmed = window.confirm(
+          `Are you sure you want to downgrade to ${planName}? This will take effect at the end of your current billing period and may limit your access to certain features.`
+        );
+        if (!confirmed) return;
+      }
+
       // Get the price ID for the selected plan
       const { data: planData } = await supabase
         .from('subscription_plans')
-        .select('stripe_price_id')
+        .select('stripe_price_id, max_grows, max_plants_per_grow')
         .eq('name', planName.toLowerCase())
         .single();
 
       if (!planData?.stripe_price_id) {
         toast.error('Invalid plan selected');
+        return;
+      }
+
+      // Check if downgrading would exceed new plan limits
+      if (planData.max_grows < currentGrowCount || planData.max_plants_per_grow < currentMaxPlants) {
+        toast.error(
+          `Unable to downgrade. Please reduce your grows to ${planData.max_grows} or fewer and ensure no grow has more than ${planData.max_plants_per_grow} plants.`
+        );
         return;
       }
 
@@ -160,7 +205,7 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      toast.error('Failed to start checkout process');
+      toast.error('Failed to process plan change');
     }
   };
 
@@ -521,24 +566,51 @@ export default function Settings() {
                 {tier !== 'free' && (
                   <div className="pt-4 border-t">
                     <h4 className="text-sm font-semibold mb-2">Subscription Management</h4>
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-4">
                       <Button variant="outline" onClick={handleManageBilling}>
                         Manage Billing
                       </Button>
                       {tier === 'premium' && (
-                        <Button 
-                          variant="outline" 
-                          onClick={() => handleUpgradeClick('enterprise')}
-                        >
-                          Upgrade to Enterprise
-                        </Button>
+                        <>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => handleUpgradeClick('enterprise')}
+                          >
+                            Upgrade to Enterprise
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            className="text-yellow-600 hover:text-yellow-700"
+                            onClick={() => handleUpgradeClick('free')}
+                          >
+                            Downgrade to Free
+                          </Button>
+                        </>
+                      )}
+                      {tier === 'enterprise' && (
+                        <>
+                          <Button 
+                            variant="outline"
+                            className="text-yellow-600 hover:text-yellow-700"
+                            onClick={() => handleUpgradeClick('premium')}
+                          >
+                            Downgrade to Premium
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            className="text-yellow-600 hover:text-yellow-700"
+                            onClick={() => handleUpgradeClick('free')}
+                          >
+                            Downgrade to Free
+                          </Button>
+                        </>
                       )}
                       <Button 
                         variant="outline" 
                         className="text-destructive"
                         onClick={handleManageBilling}
                       >
-                        Manage Subscription
+                        Cancel Subscription
                       </Button>
                     </div>
                   </div>
