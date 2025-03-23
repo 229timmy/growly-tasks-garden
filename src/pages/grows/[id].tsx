@@ -34,6 +34,13 @@ const growsService = new GrowsService();
 const plantsService = new PlantsService();
 const environmentalService = new EnvironmentalService();
 
+// Helper function to map health score to status
+const mapHealthScoreToStatus = (score: number): "healthy" | "warning" | "critical" => {
+  if (score >= 7) return "healthy";
+  if (score >= 4) return "warning";
+  return "critical";
+};
+
 // Helper function to map plant status to health
 const mapStatusToHealth = (status: "healthy" | "warning" | "critical"): "good" | "average" | "poor" => {
   switch (status) {

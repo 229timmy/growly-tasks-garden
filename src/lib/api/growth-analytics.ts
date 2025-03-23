@@ -73,7 +73,7 @@ export class GrowthAnalyticsService {
     if (measurements.length > 0) {
       const healthScores = measurements.map(m => m.health_score || 0);
       stats.averageHealthScore = healthScores.reduce((a, b) => a + b, 0) / healthScores.length;
-      stats.healthyPlantsPercentage = (healthScores.filter(score => score >= 4).length / healthScores.length) * 100;
+      stats.healthyPlantsPercentage = (healthScores.filter(score => score >= 7).length / healthScores.length) * 100;
     }
 
     return stats;

@@ -82,14 +82,14 @@
   - ✅ Nutrients tracking
   - ✅ pH level monitoring
   - ✅ Growth rate calculation
-  - ✅ Batch measurements (premium feature)
+  - ✅ Batch measurements (Premium & Enterprise only)
 - ✅ Plant photo management
   - ✅ Photo upload
   - ✅ Photo gallery
   - ✅ Storage integration
 - ✅ Plant care activities
   - ✅ Individual plant care tracking
-  - ✅ Batch care activities for multiple plants
+  - ✅ Batch care activities (Premium & Enterprise only)
   - ✅ Activity history and statistics
 - ✅ Plant limit enforcement per subscription tier
   - ✅ Tier-based plant limits
@@ -194,27 +194,33 @@
 ## Subscription Tiers
 
 ### Free Tier
-- 3 active grows
-- Basic tracking
-- Limited task management
+- 1 active grow
+- 4 plants per grow
+- Basic tracking (individual plants only)
+- Basic task management
 - Standard measurements
 - Community support
 
 ### Premium Tier ($19/month)
-- 10 grows
+- 4 active grows
+- 6 plants per grow
 - Advanced tracking
 - Full task management
 - Batch measurements
+- Batch plant care activities
 - Environmental alerts
 - Priority support
 
 ### Enterprise Tier ($49/month)
-- Unlimited grows
+- 10 active grows
+- 20 plants per grow
 - Custom features
 - White labeling
 - API access
 - Dedicated support
 - Advanced analytics
+- All batch operations
+- Custom automation rules
 
 ## Quality Standards
 

@@ -267,8 +267,8 @@ export class PlantCareService extends APIClient {
       }
 
       // Consider plant health
-      const healthScore = activity.health_score || 3;
-      score += (healthScore - 3) * 10;
+      const healthScore = activity.health_score || 5;
+      score += (healthScore - 5) * 5;
 
       return Math.max(0, Math.min(100, score));
     });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,12 +32,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const measurementSchema = z.object({
   plant_id: z.string().min(1, 'Plant is required'),
-  height: z.number().min(0, 'Height must be a positive number'),
-  health_score: z.number().min(0).max(5).optional(),
-  leaf_count: z.number().min(0).optional(),
-  ph_level: z.number().min(0).max(14).optional(),
-  notes: z.string().optional(),
-  measured_at: z.string().optional().default(() => new Date().toISOString()),
+  height: z.number().min(0, 'Height must be a positive number').nullable(),
+  health_score: z.number().min(1, 'Health score must be at least 1').max(10, 'Health score cannot exceed 10').nullable(),
+  leaf_count: z.number().min(0).nullable(),
+  ph_level: z.number().min(0).max(14).nullable(),
+  notes: z.string().optional().default(''),
+  measured_at: z.string().default(() => new Date().toISOString()),
 });
 
 type MeasurementFormData = z.infer<typeof measurementSchema>;
@@ -45,15 +45,17 @@ type MeasurementFormData = z.infer<typeof measurementSchema>;
 interface PlantMeasurementFormProps {
   plantId?: string; // Made optional to support batch mode
   growId: string; // Added to fetch plants from the same grow
+  selectedPlantIds?: string[]; // Added to support batch mode with pre-selected plants
   onSuccess?: () => void;
 }
 
 const plantsService = new PlantsService();
 const measurementsService = new PlantMeasurementsService();
 
-export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasurementFormProps) {
+export function PlantMeasurementForm({ plantId, growId, selectedPlantIds, onSuccess }: PlantMeasurementFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [batchMeasurements, setBatchMeasurements] = useState<MeasurementFormData[]>([]);
+  const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
   const queryClient = useQueryClient();
   const { canUseBatchMeasurements, getBatchSizeLimit } = useUserTier();
   const batchSizeLimit = getBatchSizeLimit();
@@ -65,18 +67,35 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
     enabled: canUseBatchMeasurements() && !plantId, // Only fetch if in batch mode
   });
 
+  // Initialize form with default values
   const form = useForm<MeasurementFormData>({
     resolver: zodResolver(measurementSchema),
     defaultValues: {
       plant_id: plantId || '',
-      height: undefined,
-      health_score: undefined,
-      leaf_count: undefined,
-      ph_level: undefined,
+      height: null,
+      health_score: null,
+      leaf_count: null,
+      ph_level: null,
       notes: '',
       measured_at: new Date().toISOString(),
     },
   });
+
+  // If selectedPlantIds is provided, initialize batch measurements for all selected plants
+  useEffect(() => {
+    if (selectedPlantIds?.length) {
+      const initialBatch = selectedPlantIds.map(id => ({
+        plant_id: id,
+        height: null,
+        health_score: null,
+        leaf_count: null,
+        ph_level: null,
+        notes: '',
+        measured_at: new Date().toISOString(),
+      }));
+      setBatchMeasurements(initialBatch);
+    }
+  }, [selectedPlantIds]);
 
   const addMeasurementMutation = useMutation({
     mutationFn: async (data: MeasurementFormData | MeasurementFormData[]) => {
@@ -165,20 +184,182 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
     setBatchMeasurements(batchMeasurements.filter((_, i) => i !== index));
   };
 
-  // Add a function to submit batch measurements directly
   const submitBatchMeasurements = async () => {
     if (batchMeasurements.length === 0) {
-      toast.error('No measurements to record');
+      toast.error('No measurements to submit');
       return;
     }
 
-    setIsSubmitting(true);
+    setIsBatchSubmitting(true);
     try {
+      const service = new PlantMeasurementsService();
       await addMeasurementMutation.mutateAsync(batchMeasurements);
+      
+      // Clear the batch after successful submission
+      setBatchMeasurements([]);
+      form.reset();
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['plant-measurements'] });
+      queryClient.invalidateQueries({ queryKey: ['plants'] });
+      
+      toast.success('Batch measurements recorded successfully');
+      onSuccess?.();
+    } catch (error) {
+      console.error('Failed to submit batch measurements:', error);
+      toast.error('Failed to record batch measurements');
     } finally {
-      setIsSubmitting(false);
+      setIsBatchSubmitting(false);
     }
   };
+
+  // If we have selectedPlantIds, render the batch measurement form
+  if (selectedPlantIds?.length) {
+    return (
+      <div className="space-y-4">
+        <Form {...form}>
+          <form className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="height"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Height (cm)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field}
+                        type="number" 
+                        step="0.1" 
+                        value={value ?? ''}
+                        onChange={e => onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="health_score"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Health Score
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-4 w-4" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Rate plant health from 1-10</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field}
+                        type="number" 
+                        min="1" 
+                        max="10" 
+                        step="1" 
+                        value={value ?? ''}
+                        onChange={e => onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="leaf_count"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Leaf Count</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field}
+                        type="number" 
+                        value={value ?? ''}
+                        onChange={e => onChange(e.target.value === '' ? null : parseInt(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="ph_level"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>pH Level</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field}
+                        type="number" 
+                        min="0" 
+                        max="14" 
+                        step="0.1" 
+                        value={value ?? ''}
+                        onChange={e => onChange(e.target.value === '' ? null : parseFloat(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+
+        <div className="flex justify-end space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setBatchMeasurements([]);
+              onSuccess?.();
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              const formData = form.getValues();
+              // Apply the form values to all selected plants
+              const updatedBatch = selectedPlantIds.map(plantId => ({
+                ...formData,
+                plant_id: plantId,
+                measured_at: new Date().toISOString(),
+              }));
+              setBatchMeasurements(updatedBatch);
+              submitBatchMeasurements();
+            }}
+            disabled={isBatchSubmitting}
+          >
+            {isBatchSubmitting ? 'Recording...' : `Record for ${selectedPlantIds.length} Plants`}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -240,7 +421,7 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
           <FormField
             control={form.control}
             name="height"
-            render={({ field }) => (
+            render={({ field: { onChange, value, ...field } }) => (
               <FormItem>
                 <FormLabel>Height (cm)</FormLabel>
                 <FormDescription>
@@ -248,14 +429,12 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
                 </FormDescription>
                 <FormControl>
                   <Input
+                    {...field}
                     type="number"
                     step="0.1"
                     placeholder="Enter plant height"
-                    value={field.value ?? ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      field.onChange(value === '' ? undefined : parseFloat(value));
-                    }}
+                    value={value ?? ''}
+                    onChange={e => onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />
@@ -267,24 +446,22 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
             <FormField
               control={form.control}
               name="health_score"
-              render={({ field }) => (
+              render={({ field: { onChange, value, ...field } }) => (
                 <FormItem>
-                  <FormLabel>Health Score (0-5)</FormLabel>
+                  <FormLabel>Health Score (1-10)</FormLabel>
                   <FormDescription>
                     Rate the overall health of the plant
                   </FormDescription>
                   <FormControl>
                     <Input
+                      {...field}
                       type="number"
                       step="1"
-                      min="0"
-                      max="5"
+                      min="1"
+                      max="10"
                       placeholder="Enter health score"
-                      value={field.value ?? ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === '' ? undefined : parseFloat(value));
-                      }}
+                      value={value ?? ''}
+                      onChange={e => onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                     />
                   </FormControl>
                   <FormMessage />
@@ -295,7 +472,7 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
             <FormField
               control={form.control}
               name="leaf_count"
-              render={({ field }) => (
+              render={({ field: { onChange, value, ...field } }) => (
                 <FormItem>
                   <FormLabel>Leaf Count</FormLabel>
                   <FormDescription>
@@ -303,15 +480,13 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
                   </FormDescription>
                   <FormControl>
                     <Input
+                      {...field}
                       type="number"
                       step="1"
                       min="0"
                       placeholder="Enter leaf count"
-                      value={field.value ?? ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === '' ? undefined : parseInt(value));
-                      }}
+                      value={value ?? ''}
+                      onChange={e => onChange(e.target.value === '' ? undefined : parseInt(e.target.value))}
                     />
                   </FormControl>
                   <FormMessage />
@@ -323,19 +498,17 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
           <FormField
             control={form.control}
             name="ph_level"
-            render={({ field }) => (
+            render={({ field: { onChange, value, ...field } }) => (
               <FormItem>
                 <FormLabel>pH Level (optional)</FormLabel>
                 <FormControl>
                   <Input
+                    {...field}
                     type="number"
                     step="0.1"
                     placeholder="Enter pH level"
-                    value={field.value ?? ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      field.onChange(value === '' ? undefined : parseFloat(value));
-                    }}
+                    value={value ?? ''}
+                    onChange={e => onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                   />
                 </FormControl>
                 <FormMessage />
@@ -381,13 +554,10 @@ export function PlantMeasurementForm({ plantId, growId, onSuccess }: PlantMeasur
               <Button 
                 type="button" 
                 onClick={submitBatchMeasurements}
-                disabled={isSubmitting}
+                disabled={isBatchSubmitting}
                 className="w-full sm:w-auto"
               >
-                {isSubmitting 
-                  ? 'Recording...' 
-                  : `Record ${batchMeasurements.length} Measurements`
-                }
+                {isBatchSubmitting ? 'Recording...' : `Record ${batchMeasurements.length} Measurements`}
               </Button>
             ) : (
               <Button 

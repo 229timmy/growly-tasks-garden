@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { DropletIcon, LeafIcon, Shovel, MoreHorizontalIcon } from 'lucide-react';
+import { useUserTier } from '@/hooks/use-user-tier';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -57,6 +58,12 @@ export function BatchCareActivityDialog({
   const [notes, setNotes] = useState<string>('');
   const [performedAt, setPerformedAt] = useState<Date>(new Date());
   const [selectAll, setSelectAll] = useState(false);
+  const { canUseBatchMeasurements } = useUserTier();
+
+  // Don't render anything if user can't use batch features
+  if (!canUseBatchMeasurements()) {
+    return null;
+  }
 
   // Load plants for the grow
   useEffect(() => {

@@ -127,7 +127,7 @@ export function PlantMeasurements({ plantId }: PlantMeasurementsProps) {
           <CardContent>
             <div className="text-2xl font-bold">
               {stats?.averageHealthScore
-                ? `${stats.averageHealthScore.toFixed(1)}/5`
+                ? `${stats.averageHealthScore.toFixed(1)}/10`
                 : 'N/A'}
             </div>
           </CardContent>
@@ -200,7 +200,7 @@ export function PlantMeasurements({ plantId }: PlantMeasurementsProps) {
                     {measurement.height ? `${measurement.height} cm` : '-'}
                   </TableCell>
                   <TableCell>
-                    {measurement.health_score ? `${measurement.health_score}/5` : '-'}
+                    {measurement.health_score ? `${measurement.health_score}/10` : '-'}
                   </TableCell>
                   <TableCell>
                     {measurement.leaf_count || '-'}

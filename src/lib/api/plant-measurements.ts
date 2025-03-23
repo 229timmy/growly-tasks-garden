@@ -154,7 +154,7 @@ export class PlantMeasurementsService extends APIClient {
     if (latestMeasurement.health_score && previousMeasurement.health_score) {
       const healthImprovement = latestMeasurement.health_score - previousMeasurement.health_score;
       
-      if (healthImprovement >= 20) {
+      if (healthImprovement >= 3) {
         await notificationsService.notifyGrowthMilestone(
           plantId,
           plant.name,
