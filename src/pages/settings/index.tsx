@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChangePasswordForm } from '@/components/auth/ChangePasswordForm';
 import type { ProfileUpdate } from '@/types/common';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { StripeService } from '@/lib/api/stripe';
 import { supabase } from '@/lib/supabase';
@@ -49,6 +49,8 @@ export default function Settings() {
     const saved = localStorage.getItem(NOTIFICATION_PREFERENCES_KEY);
     return saved ? JSON.parse(saved) : DEFAULT_NOTIFICATION_PREFERENCES;
   });
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Fetch user profile and usage stats
   const { data: profile, isLoading } = useQuery({
@@ -236,6 +238,45 @@ export default function Settings() {
       }
     }
   };
+
+  // Add useEffect to handle successful checkout
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const sessionId = searchParams.get('session_id');
+    const success = searchParams.get('success');
+
+    if (sessionId && success === 'true') {
+      // Clear URL parameters
+      navigate(location.pathname, { replace: true });
+
+      // Handle successful checkout
+      stripeService.handleSuccessfulCheckout(sessionId)
+        .then(({ tier }) => {
+          console.log('Subscription updated successfully:', { tier });
+          
+          // Invalidate all relevant queries
+          queryClient.invalidateQueries({ queryKey: ['user'] });
+          queryClient.invalidateQueries({ queryKey: ['userTier'] });
+          queryClient.invalidateQueries({ queryKey: ['profile'] });
+          queryClient.invalidateQueries({ queryKey: ['subscription'] });
+          
+          // Force refetch the profile
+          queryClient.refetchQueries({ queryKey: ['profile'] });
+          queryClient.refetchQueries({ queryKey: ['userTier'] });
+          
+          toast.success(`Successfully upgraded to ${tier} plan!`);
+          
+          // Add a small delay before reload to ensure Supabase updates are complete
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        })
+        .catch((error) => {
+          console.error('Error updating subscription:', error);
+          toast.error('There was an issue updating your subscription. Please contact support if this persists.');
+        });
+    }
+  }, [location.search, navigate, queryClient]);
 
   if (isLoading) {
     return (
