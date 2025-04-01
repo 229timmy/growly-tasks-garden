@@ -1,69 +1,137 @@
-# Welcome to your Lovable project
+# Yield GT 🌱
 
-## Project info
+A professional plant management and grow tracking SaaS platform built with modern technology.
 
-**URL**: https://lovable.dev/projects/f51be923-7af5-467f-a98c-55aa272d10ee
+## Features
 
-## How can I edit this code?
+- 🌿 **Grow Management**: Track and manage multiple grows with detailed progress tracking
+- 📊 **Plant Monitoring**: Record measurements, photos, and care activities for each plant
+- ✅ **Task Management**: Organize growing activities with a powerful task system
+- 📱 **Mobile Friendly**: Fully responsive design for managing your grows on the go
+- 📈 **Analytics**: Track growth patterns and optimize your growing process (Premium)
+- 🤝 **Team Collaboration**: Work together with other growers (Enterprise)
 
-There are several ways of editing your application.
+## Subscription Tiers
 
-**Use Lovable**
+- **Free**: Basic grow tracking and plant management
+- **Premium**: Advanced analytics and batch operations
+- **Enterprise**: Team collaboration and priority support
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f51be923-7af5-467f-a98c-55aa272d10ee) and start prompting.
+## Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: React, TypeScript, TailwindCSS
+- **Backend**: Supabase (Database & Auth)
+- **Hosting**: Vercel
+- **Payments**: Stripe
+- **Storage**: Supabase Storage
 
-**Use your preferred IDE**
+## Development Setup
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js 16+
+- npm or yarn
+- Supabase account
+- Stripe account (for payments)
 
-Follow these steps:
+### Environment Setup
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. Set up your development environment:
+```bash
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Configure environment variables in `.env`:
+```env
+# Supabase Configuration (Public)
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Supabase Configuration (Private)
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Stripe Configuration (Public)
+VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+
+# Stripe Configuration (Private)
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+```
+
+### Local Development
+
+1. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+2. Start the backend server (in a separate terminal):
+```bash
+node src/server.js
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The application will be available at `http://localhost:8080`
 
-**Use GitHub Codespaces**
+### Production Deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. Configure environment variables in Vercel
+2. Deploy through Vercel's platform
+3. Set up Supabase and Stripe for production
 
-## What technologies are used for this project?
+## Documentation
 
-This project is built with .
+- [API Reference](docs/api-reference.md) - Complete API documentation
+- [Maintenance Procedures](docs/maintenance-procedures.md) - System maintenance guide
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Project Structure
 
-## How can I deploy this project?
+```
+yield-gt/
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── pages/         # Page components
+│   ├── lib/           # Utilities and services
+│   ├── hooks/         # Custom React hooks
+│   ├── contexts/      # React contexts
+│   └── types/         # TypeScript type definitions
+├── public/            # Static assets
+├── docs/             # Documentation
+└── scripts/          # Utility scripts
+```
 
-Simply open [Lovable](https://lovable.dev/projects/f51be923-7af5-467f-a98c-55aa272d10ee) and click on Share -> Publish.
+## Available Scripts
 
-## I want to use a custom domain - is that possible?
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run test` - Run tests
+- `npm run typecheck` - Run TypeScript checks
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+## Security
+
+- All sensitive environment variables are stored securely
+- Authentication is handled by Supabase
+- API endpoints are protected with proper authorization
+- File uploads are validated and secured
+- Regular security audits are performed
+
+## Support
+
+For customer support, please contact:
+- Email: support@yieldgt.com
+- Website: https://yieldgt.com/support
+
+## Legal
+
+© 2024 Yield GT. All rights reserved. This is proprietary software.
+This codebase and its contents are confidential and protected by intellectual property laws.
+Unauthorized copying, modification, distribution, or use of any portion of this software is strictly prohibited.
+
+## Acknowledgments
+
+- [Supabase](https://supabase.io/) for backend services
+- [Vercel](https://vercel.com/) for hosting
+- [Stripe](https://stripe.com/) for payment processing
+- [TailwindCSS](https://tailwindcss.com/) for styling
+- [shadcn/ui](https://ui.shadcn.com/) for UI components
