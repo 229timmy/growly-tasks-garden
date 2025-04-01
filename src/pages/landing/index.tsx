@@ -56,21 +56,52 @@ const plans = [
   {
     name: "Free",
     description: "Perfect for hobbyist growers",
-    features: ["3 plants", "Basic tracking"],
+    features: [
+      "Up to 3 plants",
+      "Basic plant tracking",
+      "Growth timeline",
+      "Task management",
+      "Manual measurements",
+      "Basic notifications",
+      "Mobile friendly"
+    ],
     price: "0"
   },
   {
-    name: "Grower",
+    name: "Premium",
     description: "Most Popular for enthusiasts",
-    features: ["6 plants", "Analytics"],
-    price: "9",
+    features: [
+      "Up to 10 plants",
+      "Batch measurements",
+      "Batch care activities",
+      "Advanced analytics",
+      "Custom feeding schedules",
+      "Environmental tracking",
+      "Priority notifications",
+      "Photo documentation",
+      "Export data",
+      "Premium support"
+    ],
+    price: "19",
     popular: true
   },
   {
-    name: "Pro Cultivator",
-    description: "For serious growers",
-    features: ["12+ plants", "AI features"],
-    price: "19"
+    name: "Enterprise",
+    description: "For commercial growers",
+    features: [
+      "Unlimited plants",
+      "Team collaboration",
+      "Advanced batch operations",
+      "Custom integrations",
+      "API access",
+      "White-label options",
+      "Dedicated support",
+      "Custom analytics",
+      "Priority features",
+      "Training & setup"
+    ],
+    price: "49",
+    enterprise: true
   }
 ];
 
@@ -282,12 +313,17 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className={`bg-[#1A1F2E] p-8 rounded-xl border ${
-                  plan.popular ? 'border-[#2563EB]' : 'border-gray-800'
+                  plan.popular ? 'border-[#2563EB]' : plan.enterprise ? 'border-purple-500' : 'border-gray-800'
                 } relative`}
               >
                 {plan.popular && (
                   <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#2563EB]">
                     Most Popular
+                  </Badge>
+                )}
+                {plan.enterprise && (
+                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-500">
+                    Enterprise
                   </Badge>
                 )}
                 <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
@@ -298,15 +334,19 @@ export default function LandingPage() {
                 </div>
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center text-gray-300">
-                      <span className="mr-2">•</span>
-                      {feature}
+                    <li key={i} className="flex items-start text-gray-300">
+                      <span className="mr-2 text-[#2563EB]">✓</span>
+                      <span className="text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 <Button 
                   className={`w-full ${
-                    plan.popular ? 'bg-[#2563EB] hover:bg-[#1D4ED8]' : 'bg-gray-800 hover:bg-gray-700'
+                    plan.popular 
+                      ? 'bg-[#2563EB] hover:bg-[#1D4ED8]' 
+                      : plan.enterprise
+                      ? 'bg-purple-500 hover:bg-purple-600'
+                      : 'bg-gray-800 hover:bg-gray-700'
                   }`}
                 >
                   <Link to={`/signup?plan=${plan.name.toLowerCase()}`}>Choose {plan.name}</Link>

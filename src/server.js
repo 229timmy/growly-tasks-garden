@@ -40,10 +40,10 @@ app.use(cors({
 }));
 
 // Initialize Stripe and Supabase
-const stripe = new Stripe(process.env.VITE_STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 // Standardized error response function
@@ -63,13 +63,13 @@ const sendErrorResponse = (res, status, message, details = null) => {
 async function getTierFromPriceId(priceId) {
   try {
     const { data: plan, error } = await supabase
-      .from('subscription_plans')
-      .select('name')
-      .eq('stripe_price_id', priceId)
-      .single();
-    
+    .from('subscription_plans')
+    .select('name')
+    .eq('stripe_price_id', priceId)
+    .single();
+  
     if (error) throw error;
-    return plan?.name || 'free';
+  return plan?.name || 'free';
   } catch (error) {
     console.error('Error fetching tier from price ID:', error);
     return 'free'; // Default to free on error
@@ -80,13 +80,13 @@ async function getTierFromPriceId(priceId) {
 async function getUserIdFromCustomerId(customerId) {
   try {
     const { data: customer, error } = await supabase
-      .from('stripe_customers')
-      .select('user_id')
-      .eq('stripe_customer_id', customerId)
-      .single();
-    
+    .from('stripe_customers')
+    .select('user_id')
+    .eq('stripe_customer_id', customerId)
+    .single();
+  
     if (error) throw error;
-    return customer?.user_id;
+  return customer?.user_id;
   } catch (error) {
     console.error('Error fetching user from customer ID:', error);
     return null;
@@ -99,61 +99,61 @@ async function handleSubscriptionEvent(event) {
   const customerId = subscription.customer;
   
   try {
-    const userId = await getUserIdFromCustomerId(customerId);
-    
-    if (!userId) {
-      throw new Error(`No user found for customer: ${customerId}`);
-    }
+  const userId = await getUserIdFromCustomerId(customerId);
+  
+  if (!userId) {
+    throw new Error(`No user found for customer: ${customerId}`);
+  }
 
-    // Get the price ID from the subscription
-    const priceId = subscription.items.data[0]?.price.id;
-    if (!priceId) {
-      throw new Error('No price ID found in subscription');
-    }
+  // Get the price ID from the subscription
+  const priceId = subscription.items.data[0]?.price.id;
+  if (!priceId) {
+    throw new Error('No price ID found in subscription');
+  }
 
-    // Get the tier associated with this price
-    const tier = await getTierFromPriceId(priceId);
+  // Get the tier associated with this price
+  const tier = await getTierFromPriceId(priceId);
 
-    // First try to update existing subscription
-    const { error: updateError } = await supabase
+  // First try to update existing subscription
+  const { error: updateError } = await supabase
+    .from('subscriptions')
+    .update({
+      stripe_subscription_id: subscription.id,
+      status: subscription.status,
+      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      cancel_at_period_end: subscription.cancel_at_period_end
+    })
+    .eq('user_id', userId)
+    .eq('status', 'active');
+
+  if (updateError) {
+    // If update fails, try to insert new subscription
+    const { error: insertError } = await supabase
       .from('subscriptions')
-      .update({
+      .insert({
+        user_id: userId,
         stripe_subscription_id: subscription.id,
         status: subscription.status,
         current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
         cancel_at_period_end: subscription.cancel_at_period_end
-      })
-      .eq('user_id', userId)
-      .eq('status', 'active');
+      });
 
-    if (updateError) {
-      // If update fails, try to insert new subscription
-      const { error: insertError } = await supabase
-        .from('subscriptions')
-        .insert({
-          user_id: userId,
-          stripe_subscription_id: subscription.id,
-          status: subscription.status,
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          cancel_at_period_end: subscription.cancel_at_period_end
-        });
-
-      if (insertError) {
-        throw new Error(`Failed to update subscription: ${insertError.message}`);
-      }
+    if (insertError) {
+      throw new Error(`Failed to update subscription: ${insertError.message}`);
     }
+  }
 
-    // Update user's tier in profiles table
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ tier })
-      .eq('id', userId);
+  // Update user's tier in profiles table
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ tier })
+    .eq('id', userId);
 
-    if (profileError) {
-      throw new Error(`Failed to update user tier: ${profileError.message}`);
-    }
+  if (profileError) {
+    throw new Error(`Failed to update user tier: ${profileError.message}`);
+  }
 
-    console.log(`Successfully updated subscription and tier for user ${userId} to ${tier}`);
+  console.log(`Successfully updated subscription and tier for user ${userId} to ${tier}`);
   } catch (error) {
     console.error('Error handling subscription event:', error);
     // We log but don't rethrow to avoid failing the webhook
@@ -426,13 +426,13 @@ app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async
   const sig = req.headers['stripe-signature'];
   let event;
 
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
+      try {
+        event = stripe.webhooks.constructEvent(
+          req.body,
+          sig,
+          process.env.STRIPE_WEBHOOK_SECRET
+        );
+      } catch (err) {
     console.error(`Webhook signature verification failed: ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }

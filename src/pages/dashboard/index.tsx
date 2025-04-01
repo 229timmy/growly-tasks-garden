@@ -1,387 +1,285 @@
-import { useAuth } from '@/contexts/auth/AuthContext';
-import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { GrowsService } from '@/lib/api/grows';
-import { PlantsService } from '@/lib/api/plants';
-import { TasksService } from '@/lib/api/tasks';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Plus } from 'lucide-react';
+import { useAuth } from '@/contexts/auth/AuthContext';
+import { GrowsService } from '@/lib/api/grows';
+import { TasksService } from '@/lib/api/tasks';
+import { PlantsService } from '@/lib/api/plants';
 import { GrowCard } from '@/components/dashboard/GrowCard';
 import { TaskItem } from '@/components/tasks/TaskItem';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
-import { QuickActions } from '@/components/dashboard/QuickActions';
-import { PlantCareStats } from '@/components/plants/PlantCareStats';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn, calculateGrowProgress } from '@/lib/utils';
 import type { Database } from '@/types/database';
-import { calculateGrowProgress } from '@/lib/utils';
 
-type Grow = Database['public']['Tables']['grows']['Row'];
-type Task = Database['public']['Tables']['tasks']['Row'];
-
+// Services
 const growsService = new GrowsService();
 const plantsService = new PlantsService();
 const tasksService = new TasksService();
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
-  const queryClient = useQueryClient();
-  
-  const { data: grows, isLoading: isLoadingGrows, error: growsError } = useQuery({
+  const { user } = useAuth();
+  const isMobile = useIsMobile();
+
+  // Fetch data
+  const { data: grows, isLoading: isLoadingGrows } = useQuery({
     queryKey: ['grows'],
-    queryFn: async () => {
-      if (!user) {
-        throw new Error('Authentication required');
-      }
-      console.log('Fetching grows for user:', user.id);
-      const grows = await growsService.listGrows();
-      console.log('Grows fetched:', grows);
-      return grows;
-    },
-    enabled: !!user,
-    retry: 1
+    queryFn: () => growsService.listGrows(),
   });
 
-  const { data: plantStats, isLoading: isLoadingPlants } = useQuery({
-    queryKey: ['plants', 'stats'],
-    queryFn: () => plantsService.getPlantStats(),
-    enabled: !!user,
+  const { data: plants, isLoading: isLoadingPlants } = useQuery({
+    queryKey: ['plants'],
+    queryFn: () => plantsService.listPlants(),
   });
 
-  const { data: taskStats, isLoading: isLoadingTasks } = useQuery({
-    queryKey: ['tasks', 'stats'],
-    queryFn: () => tasksService.getTaskStats(),
-    enabled: !!user,
+  const { data: tasks, isLoading: isLoadingTasks } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: () => tasksService.listTasks(),
   });
 
-  const { data: tasks, isLoading: isLoadingRecentTasks } = useQuery({
-    queryKey: ['tasks', 'recent'],
-    queryFn: () => tasksService.listTasks({ 
-      completed: false,
-      limit: 5
-    }),
-    enabled: !!user,
-  });
-
-  // Add query for photos when grows are loaded
-  const growPhotoQueries = useQueries({
-    queries: (grows || []).map(grow => ({
-      queryKey: ['grow-photo', grow.id],
-      queryFn: () => growsService.getLatestGrowPhoto(grow.id),
-      enabled: !!grows && !!user,
-    })),
-    combine: (results) => {
-      return {
-        data: results.map(result => result.data),
-        pending: results.some(result => result.isPending),
-      };
-    },
-  });
-
-  // Create a map of grow ID to photo URL
-  const photoMap: Record<string, string | null> = {};
-  if (grows && growPhotoQueries.data) {
-    grows.forEach((grow, index) => {
-      photoMap[grow.id] = growPhotoQueries.data[index];
-    });
-  }
-
-  // Add query for task related data
-  const { data: taskRelatedData } = useQuery({
-    queryKey: ['tasks', 'related-data'],
-    queryFn: async () => {
-      if (!user) return null;
-      
-      const [grows, plants] = await Promise.all([
-        growsService.listGrows(),
-        plantsService.listPlants()
-      ]);
-      
-      const growMap = new Map(grows.map(g => [g.id, g]));
-      const plantMap = new Map(plants.map(p => [p.id, p]));
-      
-      return {
-        grows: growMap,
-        plants: plantMap
-      };
-    },
-    enabled: !!user
-  });
-
-  // Log the current state
-  console.log('Auth state:', { user, loading });
-  console.log('Grows state:', { grows, isLoadingGrows, error: growsError });
-
-  const activeGrows = (grows as Grow[] | undefined)?.filter(grow => 
-    ['seedling', 'vegetative', 'flowering'].includes(grow.stage)
-  ) || [];
-  const isLoading = loading || isLoadingGrows || isLoadingPlants || isLoadingTasks;
-  
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  // Prepare data for display
+  const activeGrows = grows?.filter(grow => grow.stage !== 'completed') || [];
+  const activeTasks = tasks?.filter(task => !task.is_completed) || [];
+  const totalPlants = plants?.length || 0;
 
   if (!user) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground">Please sign in to view your dashboard.</p>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
+  // Handle task toggling
+  const handleTaskToggle = async (taskId: string, completed: boolean) => {
+    try {
+      await tasksService.toggleTaskCompletion(taskId);
+    } catch (error) {
+      console.error('Failed to toggle task:', error);
+    }
+  };
+
   return (
-    <div className="container py-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back{user?.email ? `, ${user.email}` : ''}! Here's an overview of your grows and tasks.
-        </p>
+    <div className={cn(
+      "container mx-auto",
+      isMobile ? "p-2 space-y-2" : "p-8 space-y-8"
+    )}>
+      <div className="flex items-center justify-between">
+        <h1 className={cn(
+          "font-semibold",
+          isMobile ? "text-xl" : "text-2xl"
+        )}>Dashboard</h1>
       </div>
-      
+
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Grows</CardTitle>
+      <div className={cn(
+        "grid gap-4",
+        isMobile ? "grid-cols-2" : "grid-cols-3"
+      )}>
+        <Card>
+          <CardHeader className={cn(
+            isMobile ? "p-3" : "p-6"
+          )}>
+            <CardTitle className={cn(
+              isMobile ? "text-sm" : "text-base"
+            )}>Active Grows</CardTitle>
           </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <p className="text-2xl font-bold">{activeGrows.length}</p>
-                <p className="text-xs text-muted-foreground">
-                  {grows?.length} total grows
-                </p>
-              </>
-            )}
+          <CardContent className={cn(
+            isMobile ? "p-3 pt-0" : "p-6 pt-0"
+          )}>
+            <div className={cn(
+              "text-2xl font-bold",
+              isMobile && "text-xl"
+            )}>
+              {isLoadingGrows ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                activeGrows.length
+              )}
+            </div>
           </CardContent>
         </Card>
-        
-        <Card className="bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Plants</CardTitle>
+
+        <Card>
+          <CardHeader className={cn(
+            isMobile ? "p-3" : "p-6"
+          )}>
+            <CardTitle className={cn(
+              isMobile ? "text-sm" : "text-base"
+            )}>Total Plants</CardTitle>
           </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <p className="text-2xl font-bold">{plantStats?.total || 0}</p>
-                <p className="text-xs text-muted-foreground">
-                  Across all grows
-                </p>
-              </>
-            )}
+          <CardContent className={cn(
+            isMobile ? "p-3 pt-0" : "p-6 pt-0"
+          )}>
+            <div className={cn(
+              "text-2xl font-bold",
+              isMobile && "text-xl"
+            )}>
+              {isLoadingPlants ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                totalPlants
+              )}
+            </div>
           </CardContent>
         </Card>
-        
-        <Card className="bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Tasks</CardTitle>
+
+        <Card>
+          <CardHeader className={cn(
+            isMobile ? "p-3" : "p-6"
+          )}>
+            <CardTitle className={cn(
+              isMobile ? "text-sm" : "text-base"
+            )}>Active Tasks</CardTitle>
           </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <p className="text-2xl font-bold">
-                  {(taskStats?.total || 0) - (taskStats?.completed || 0)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {taskStats?.completed || 0} completed
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                <p className="text-2xl font-bold">
-                  {taskStats?.total 
-                    ? Math.round((taskStats.completed / taskStats.total) * 100)
-                    : 0}%
-                </p>
-                <p className="text-xs text-muted-foreground">Task completion</p>
-              </>
-            )}
+          <CardContent className={cn(
+            isMobile ? "p-3 pt-0" : "p-6 pt-0"
+          )}>
+            <div className={cn(
+              "text-2xl font-bold",
+              isMobile && "text-xl"
+            )}>
+              {isLoadingTasks ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                activeTasks.length
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
-      
-      {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+
+      {/* Main Content */}
+      <div className={cn(
+        "grid gap-4",
+        isMobile ? "grid-cols-1" : "grid-cols-2"
+      )}>
         {/* Grows Section */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Your Grows</h2>
-              <div className="flex gap-2">
-                <Button asChild>
-                  <Link to="/app/grows/new">
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Grow
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/app/grows">View All</Link>
-                </Button>
-              </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className={cn(
+              "font-semibold",
+              isMobile ? "text-lg" : "text-xl"
+            )}>Active Grows</h2>
+            <Button asChild size={isMobile ? "sm" : "default"}>
+              <Link to="/app/grows/new">
+                <Plus className={cn(
+                  "mr-2",
+                  isMobile ? "h-4 w-4" : "h-5 w-5"
+                )} />
+                New Grow
+              </Link>
+            </Button>
+          </div>
+
+          {isLoadingGrows ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-            {isLoadingGrows ? (
-              <Card>
-                <CardContent className="flex items-center justify-center py-6">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </CardContent>
-              </Card>
-            ) : growsError ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-destructive">Error loading grows. Please try again.</p>
-                </CardContent>
-              </Card>
-            ) : grows?.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-muted-foreground">No grows yet. Create your first grow to get started!</p>
-                  <div className="mt-4">
-                    <Button asChild>
-                      <Link to="/app/grows/new">Create Grow</Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {activeGrows.slice(0, 3).map((grow) => (
+          ) : !activeGrows.length ? (
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-center text-muted-foreground">No active grows</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {activeGrows.slice(0, 3).map((grow) => {
+                // Calculate days active
+                const startDate = grow.start_date || grow.created_at;
+                const daysActive = startDate 
+                  ? Math.ceil((new Date().getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
+                  : 0;
+                
+                // Count plants in this grow
+                const growPlantCount = plants?.filter(p => p.grow_id === grow.id)?.length || 0;
+                
+                return (
                   <GrowCard
                     key={grow.id}
                     id={grow.id}
                     name={grow.name}
                     stage={grow.stage as "seedling" | "vegetation" | "flowering" | "harvested"}
-                    startDate={grow.start_date}
-                    daysActive={Math.ceil(
-                      (new Date().getTime() - new Date(grow.start_date).getTime()) / 
-                      (1000 * 60 * 60 * 24)
-                    )}
-                    plantCount={plantStats?.byGrow[grow.id] || 0}
+                    startDate={startDate || ''}
+                    daysActive={daysActive}
+                    plantCount={growPlantCount}
                     temperature={grow.target_temp_high || 0}
                     humidity={grow.target_humidity_high || 0}
                     lastUpdated={grow.updated_at || grow.created_at}
-                    progress={calculateGrowProgress(grow.start_date)}
-                    imageUrl={photoMap[grow.id] || undefined}
+                    progress={calculateGrowProgress(startDate)}
+                    className={isMobile ? "scale-95" : ""}
                   />
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {/* Tasks Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Recent Tasks</h2>
-              <div className="flex gap-2">
-                <Button asChild>
-                  <Link to="/app/tasks/new">
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Task
-                  </Link>
+                );
+              })}
+              {activeGrows.length > 3 && (
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/app/grows">View All Grows</Link>
                 </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/app/tasks">View All</Link>
-                </Button>
-              </div>
+              )}
             </div>
-            {isLoadingTasks || isLoadingRecentTasks ? (
-              <Card>
-                <CardContent className="flex items-center justify-center py-6">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </CardContent>
-              </Card>
-            ) : !tasks?.length ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-muted-foreground">No tasks yet. Add some tasks to track your grows!</p>
-                  <div className="mt-4">
-                    <Button asChild>
-                      <Link to="/app/tasks/new">Create Task</Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {tasks.map((task) => (
+          )}
+        </div>
+
+        {/* Tasks Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className={cn(
+              "font-semibold",
+              isMobile ? "text-lg" : "text-xl"
+            )}>Recent Tasks</h2>
+            <Button asChild size={isMobile ? "sm" : "default"}>
+              <Link to="/app/tasks/new">
+                <Plus className={cn(
+                  "mr-2",
+                  isMobile ? "h-4 w-4" : "h-5 w-5"
+                )} />
+                New Task
+              </Link>
+            </Button>
+          </div>
+
+          {isLoadingTasks ? (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : !activeTasks.length ? (
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-center text-muted-foreground">No active tasks</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {activeTasks.slice(0, 3).map((task) => {
+                // Skip rendering if required fields are missing
+                if (!task || !task.id || !task.title || !task.due_date) {
+                  return null;
+                }
+                
+                return (
                   <TaskItem
                     key={task.id}
                     id={task.id}
                     title={task.title}
-                    description={task.description || undefined}
-                    dueDate={task.due_date || new Date().toISOString()}
-                    priority={task.priority}
-                    isCompleted={task.completed}
-                    relatedTo={task.grow_id && taskRelatedData?.grows.get(task.grow_id) ? {
-                      type: "grow",
-                      id: task.grow_id,
-                      name: taskRelatedData.grows.get(task.grow_id)?.name || "Unnamed Grow"
-                    } : undefined}
-                    onToggle={(id, completed) => {
-                      tasksService.toggleTaskCompletion(id).then(() => {
-                        // Invalidate relevant queries
-                        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-                        queryClient.invalidateQueries({ queryKey: ['activities'] });
-                      });
-                    }}
+                    description={task.description ?? undefined}
+                    dueDate={task.due_date}
+                    priority={task.priority as "low" | "medium" | "high"}
+                    isCompleted={task.is_completed}
+                    onToggle={handleTaskToggle}
+                    className={isMobile ? "p-3" : undefined}
                   />
-                ))}
-                
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Completed</span>
-                        <span className="font-medium">{taskStats?.completed}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Upcoming</span>
-                        <span className="font-medium">{taskStats?.upcoming}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Overdue</span>
-                        <span className="font-medium text-destructive">{taskStats?.overdue}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Right Column */}
-        <div className="space-y-6">
-          <QuickActions />
-          
-          {/* Plant Care Stats */}
-          <PlantCareStats />
-          
-          {/* Activity Feed */}
-          <ActivityFeed />
+                );
+              })}
+              {activeTasks.length > 3 && (
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/app/tasks">View All Tasks</Link>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Activity Feed */}
+      <ActivityFeed compact={isMobile} />
     </div>
   );
 } 
