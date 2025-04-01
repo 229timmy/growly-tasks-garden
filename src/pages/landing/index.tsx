@@ -326,13 +326,13 @@ export default function LandingPage() {
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="relative mx-auto md:mx-0 -left-12 md:left-0"
+              className="relative mx-auto md:mx-0"
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 }}
-                className="max-w-[80%] mx-auto md:mx-0"
+                className="max-w-[80%] mx-auto md:mx-0 relative"
               >
                 <img
                   src="/assets/dashboard-preview.png"
@@ -344,7 +344,7 @@ export default function LandingPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 }}
-                className="absolute -bottom-12 -right-12 w-64"
+                className="absolute -bottom-12 -right-4 md:-bottom-24 md:-right-8 w-64 md:w-72"
               >
                 <img
                   src="/assets/grow-log-preview.png"
