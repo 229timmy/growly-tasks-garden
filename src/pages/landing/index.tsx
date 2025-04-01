@@ -335,7 +335,7 @@ export default function LandingPage() {
                 className="max-w-[80%] mx-auto md:mx-0 relative"
               >
                 <img
-                  src="/assets/dashboard-preview.png"
+                  src={new URL('/assets/dashboard-preview.png', import.meta.url).href}
                   alt="Dashboard Preview"
                   className="w-full shadow-2xl rounded-xl"
                 />
@@ -347,7 +347,7 @@ export default function LandingPage() {
                 className="absolute -bottom-12 -right-4 md:-bottom-24 md:-right-8 w-64 md:w-72"
               >
                 <img
-                  src="/assets/grow-log-preview.png"
+                  src={new URL('/assets/grow-log-preview.png', import.meta.url).href}
                   alt="Grow Log Preview"
                   className="w-full shadow-2xl rounded-xl"
                 />
