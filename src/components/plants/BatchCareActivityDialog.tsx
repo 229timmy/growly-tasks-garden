@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { DropletIcon, LeafIcon, Shovel, MoreHorizontalIcon } from 'lucide-react';
+import { DropletIcon, LeafIcon, Shovel, MoreHorizontalIcon, Plus, AlertCircle } from 'lucide-react';
 import { useUserTier } from '@/hooks/use-user-tier';
+import type { Plant } from '@/types/common';
+import { NoPlantState } from './NoPlantState';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +34,10 @@ import { cn } from '@/lib/utils';
 import { PlantCareService } from '@/lib/api/plant-care';
 import { PlantsService } from '@/lib/api/plants';
 import { ActivitiesService } from '@/lib/api/activities';
-import { Plant, PlantCareActivityInsert } from '@/types/common';
+import { PlantCareActivityInsert } from '@/types/common';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { PlantCareActivityForm } from './PlantCareActivityForm';
+import { CreatePlantDialog } from './CreatePlantDialog';
 
 interface BatchCareActivityDialogProps {
   growId: string;
@@ -52,6 +57,7 @@ export function BatchCareActivityDialog({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlantIds, setSelectedPlantIds] = useState<string[]>([]);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
   const [activityType, setActivityType] = useState<'watering' | 'feeding' | 'top_dressing' | 'other'>('watering');
   const [amount, setAmount] = useState<string>('');
   const [unit, setUnit] = useState<string>('');
@@ -61,6 +67,7 @@ export function BatchCareActivityDialog({
   const [selectAll, setSelectAll] = useState(false);
   const { canUseBatchMeasurements, tier, isLoading: tierLoading } = useUserTier();
   const [internalOpen, setInternalOpen] = useState(false);
+  const [createPlantOpen, setCreatePlantOpen] = useState(false);
 
   // Determine if the component is being used in controlled or uncontrolled mode
   const isControlled = open !== undefined && onOpenChange !== undefined;
@@ -71,11 +78,10 @@ export function BatchCareActivityDialog({
 
   // Load plants when the dialog opens
   useEffect(() => {
-    // Attempt to load plants when the dialog opens
-    if (isDialogOpen && !isLoadingPlants && !loadError && plants.length === 0) {
+    if (isDialogOpen && !isLoadingPlants && !hasAttemptedLoad && canUseBatchMeasurements()) {
       loadPlantsForGrow();
     }
-  }, [isDialogOpen, isLoadingPlants, loadError, plants.length]);
+  }, [isDialogOpen, isLoadingPlants, hasAttemptedLoad, canUseBatchMeasurements]);
 
   // Function to load plants
   const loadPlantsForGrow = async () => {
@@ -95,6 +101,7 @@ export function BatchCareActivityDialog({
       toast.error('Failed to load plants');
     } finally {
       setIsLoadingPlants(false);
+      setHasAttemptedLoad(true);
     }
   };
 
@@ -127,11 +134,12 @@ export function BatchCareActivityDialog({
     }
   }, [selectedPlantIds, plants]);
 
-  // Reset form when dialog is closed
+  // Reset states when dialog is closed
   useEffect(() => {
     if (!isDialogOpen) {
-      // Reset form state when dialog is closed
       setSelectedPlantIds([]);
+      setPlants([]);
+      setHasAttemptedLoad(false);
       setSelectAll(false);
       setAmount('');
       setUnit('');
@@ -197,8 +205,8 @@ export function BatchCareActivityDialog({
       
       // Also add individual activities for each plant if needed
       if (selectedPlantIds.length <= 5) {  // Limit individual entries to avoid flooding the feed
-        const selectedPlants = plants.filter(plant => selectedPlantIds.includes(plant.id));
-        for (const plant of selectedPlants) {
+        const selectedPlantsData = plants.filter(plant => selectedPlantIds.includes(plant.id));
+        for (const plant of selectedPlantsData) {
           await activitiesService.addActivity({
             type: 'plant_updated',
             title: `${activityTitle}: ${plant.name}`,
@@ -260,7 +268,12 @@ export function BatchCareActivityDialog({
         return 'Plant Care Activity';
     }
   };
-  
+
+  const handleCreatePlantSuccess = () => {
+    setCreatePlantOpen(false);
+    loadPlantsForGrow();
+  };
+
   // Don't render anything if user can't use batch features or tier is still loading
   if (tierLoading) {
     return null;
@@ -271,229 +284,76 @@ export function BatchCareActivityDialog({
   }
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="w-full sm:w-auto">Batch Care Activities</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Record Multiple Care Activities</DialogTitle>
-          <DialogDescription>
-            Select plants and record the same care activity for all of them at once.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          {/* Plant Selection Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">Select Plants</h3>
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="select-all" 
-                  checked={selectAll} 
-                  onCheckedChange={handleSelectAll}
-                />
-                <Label htmlFor="select-all">Select All</Label>
-              </div>
-            </div>
-            
-            {isLoadingPlants ? (
-              <div className="text-center py-4">Loading plants...</div>
-            ) : loadError ? (
-              <div className="text-center py-4 text-destructive">
-                {loadError}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="ml-2"
-                  onClick={loadPlantsForGrow}
-                >
-                  Retry
-                </Button>
-              </div>
-            ) : plants.length === 0 ? (
-              <div className="text-center py-4">
-                No plants found in this grow
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="ml-2"
-                  onClick={loadPlantsForGrow}
-                >
-                  Reload
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto border rounded-md p-2">
-                {plants.map(plant => (
-                  <div key={plant.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded-md">
-                    <Checkbox 
-                      id={`plant-${plant.id}`} 
-                      checked={selectedPlantIds.includes(plant.id)}
-                      onCheckedChange={(checked) => handlePlantSelection(plant.id, checked === true)}
-                    />
-                    <Label htmlFor={`plant-${plant.id}`} className="flex-1 cursor-pointer">
-                      {plant.name || `Plant ${plant.id.substring(0, 8)}`}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <div className="text-sm text-muted-foreground">
-              {selectedPlantIds.length} of {plants.length} plants selected
-            </div>
-          </div>
-
-          {/* Activity Details Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Activity Details</h3>
-            
+    <>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogTrigger asChild>
+          <Button variant="outline" className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Batch Care Activities
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Batch Plant Care Activities</DialogTitle>
+            <DialogDescription>
+              Select plants and record care activities for all of them at once.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="activity-type">Activity Type</Label>
-                <Select 
-                  value={activityType} 
-                  onValueChange={(value) => setActivityType(value as any)}
-                >
-                  <SelectTrigger id="activity-type">
-                    <SelectValue placeholder="Select activity type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="watering" className="flex items-center">
-                      <div className="flex items-center gap-2">
-                        <DropletIcon className="h-4 w-4 text-blue-500" />
-                        <span>Watering</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="feeding">
-                      <div className="flex items-center gap-2">
-                        <LeafIcon className="h-4 w-4 text-green-500" />
-                        <span>Feeding</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="top_dressing">
-                      <div className="flex items-center gap-2">
-                        <Shovel className="h-4 w-4 text-amber-500" />
-                        <span>Top Dressing</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="other">
-                      <div className="flex items-center gap-2">
-                        <MoreHorizontalIcon className="h-4 w-4 text-gray-500" />
-                        <span>Other</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Amount</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.1"
-                    placeholder="Enter amount"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="unit">Unit</Label>
-                  <Input
-                    id="unit"
-                    placeholder="e.g., ml, g, cups"
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {(activityType === 'feeding' || activityType === 'top_dressing') && (
-                <div className="space-y-2">
-                  <Label htmlFor="product-name">Product Name</Label>
-                  <Input
-                    id="product-name"
-                    placeholder="Enter product name"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Add any additional notes about this activity"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="performed-at">Date Performed</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="performed-at"
-                      variant="outline"
-                      className={cn(
-                        'w-full pl-3 text-left font-normal',
-                        !performedAt && 'text-muted-foreground'
-                      )}
-                    >
-                      {performedAt ? (
-                        format(performedAt, 'PPP')
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={performedAt}
-                      onSelect={(date) => date && setPerformedAt(date)}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date('1900-01-01')
-                      }
-                      initialFocus
+              {isLoadingPlants ? (
+                <div className="p-4 text-center">Loading plants...</div>
+              ) : (hasAttemptedLoad && plants.length === 0) || loadError ? (
+                <NoPlantState onAddPlant={() => setCreatePlantOpen(true)} />
+              ) : plants.length > 0 && (
+                <>
+                  <div className="flex items-center space-x-2 py-2">
+                    <Checkbox 
+                      id="select-all"
+                      checked={selectedPlantIds.length === plants.length && plants.length > 0}
+                      onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-          </div>
-        </div>
+                    <label htmlFor="select-all" className="text-sm font-medium">
+                      Select All
+                    </label>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-2 bg-muted/50 rounded-lg p-2">
+                    {plants.map((plant) => (
+                      <div key={plant.id} className="flex items-center space-x-2 p-2 hover:bg-muted rounded-md">
+                        <Checkbox
+                          id={`plant-${plant.id}`}
+                          checked={selectedPlantIds.includes(plant.id)}
+                          onCheckedChange={(checked) => handlePlantSelection(plant.id, checked as boolean)}
+                        />
+                        <label htmlFor={`plant-${plant.id}`} className="text-sm">
+                          {plant.name || `Plant ${plant.id}`}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setSelectedPlantIds([]);
-              setSelectAll(false);
-            }}
-            disabled={selectedPlantIds.length === 0 || isSubmitting}
-            className="w-full sm:w-auto order-2 sm:order-1"
-          >
-            Clear Selection
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={selectedPlantIds.length === 0 || isSubmitting}
-            className="w-full sm:w-auto order-1 sm:order-2"
-          >
-            {isSubmitting ? 'Submitting...' : `Record for ${selectedPlantIds.length} Plants`}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+                  {selectedPlantIds.length > 0 && (
+                    <div className="pt-4">
+                      <PlantCareActivityForm
+                        growId={growId}
+                        plantId={selectedPlantIds[0]}
+                        onSuccess={handleSubmit}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      <CreatePlantDialog
+        open={createPlantOpen}
+        onOpenChange={setCreatePlantOpen}
+        growId={growId}
+      />
+    </>
   );
 } 

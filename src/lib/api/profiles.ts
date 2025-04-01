@@ -99,21 +99,33 @@ export class ProfilesService extends APIClient {
       
       // First try to use a fully public bucket approach
       try {
+        // Create the full path including user ID to enforce ownership
+        const userPath = `${session.user.id}/${fileName}`;
+        console.log(`Attempting upload to ${AVATARS_BUCKET}/${userPath}`);
+        
         const { data, error: uploadError } = await supabase.storage
           .from(AVATARS_BUCKET)
-          .upload(fileName, file, {
-            upsert: true
+          .upload(userPath, file, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: file.type
           });
         
         if (uploadError) {
-          console.error('Upload error:', uploadError.message);
-          throw uploadError;
+          // More detailed error logging for Supabase Storage
+          console.error('Supabase Storage Upload Error:', {
+            message: uploadError.message,
+            status: (uploadError as any).status,
+            error: (uploadError as any).error,
+            stack: uploadError.stack // Include stack trace if available
+          });
+          throw uploadError; // Re-throw the original error
         }
         
         // Get the public URL
         const { data: urlData } = supabase.storage
           .from(AVATARS_BUCKET)
-          .getPublicUrl(fileName);
+          .getPublicUrl(userPath);
         
         console.log('Public URL generated:', urlData.publicUrl);
         
@@ -121,18 +133,28 @@ export class ProfilesService extends APIClient {
         return await this.updateProfile(userId, {
           avatar_url: urlData.publicUrl
         });
-      } catch (uploadError) {
-        console.error('Upload failed, trying fallback:', uploadError);
+      } catch (uploadError: any) { // Catch as any to access potential properties
+        console.error('Avatar Upload Catch Block Triggered. Error Details:', {
+          message: uploadError.message,
+          name: uploadError.name,
+          status: uploadError.status, // Log status if available
+          error: uploadError.error,   // Log error detail if available
+          stack: uploadError.stack,
+        });
         
-        // FALLBACK: If upload fails, just update the profile with a placeholder image URL
-        // This is just to test if the issue is with storage or with profile updates
+        // IMPORTANT: Instead of using the fallback, re-throw the error
+        // This prevents masking the actual storage issue.
+        // We can add the fallback back later if needed, but for debugging, let's see the real error.
+        throw new Error(`Avatar upload failed: ${uploadError.message || 'Unknown storage error'}`);
         
+        /* --- Fallback temporarily commented out for debugging --- 
         const placeholderUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userId)}&background=random`;
         console.log('Using placeholder URL:', placeholderUrl);
         
         return await this.updateProfile(userId, {
           avatar_url: placeholderUrl
         });
+        --- End of commented out fallback --- */
       }
     } catch (error) {
       console.error('Error in avatar update process:', error);

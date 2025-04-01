@@ -25,6 +25,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Plus } from 'lucide-react';
 import { PlantMeasurementForm } from './PlantMeasurementForm';
+import { NoPlantState } from './NoPlantState';
 
 interface PlantMeasurementsProps {
   plantId: string;
@@ -52,6 +53,43 @@ export function PlantMeasurements({ plantId }: PlantMeasurementsProps) {
 
   if (measurementsLoading || statsLoading) {
     return <div>Loading measurements...</div>;
+  }
+
+  if (!measurements || measurements.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">Plant Measurements</h3>
+          <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Measurement
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Record Plant Measurement</DialogTitle>
+                <DialogDescription>
+                  Record measurements such as height, water amount, and nutrients for your plant.
+                </DialogDescription>
+              </DialogHeader>
+              <PlantMeasurementForm
+                plantId={plantId}
+                growId={plant?.grow_id || ''}
+                onSuccess={() => setShowAddForm(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+        <div className="rounded-md border border-dashed p-6 text-center">
+          <h3 className="text-lg font-medium">No measurements recorded</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Record your first measurement to start tracking your plant's growth.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const heightData = measurements

@@ -18,6 +18,7 @@ import { PlantCareService } from '@/lib/api/plant-care';
 import { PlantCareActivity } from '@/types/common';
 import { PlantsService } from '@/lib/api/plants';
 import { Plant } from '@/types/common';
+import { NoPlantState } from './NoPlantState';
 
 interface PlantCareActivityHistoryProps {
   growId: string;
@@ -100,7 +101,9 @@ export function PlantCareActivityHistory({
       
       const plantsMap: Record<string, Plant> = {};
       fetchedPlants.forEach((plant) => {
-        plantsMap[plant.id] = plant;
+        if (plant) {
+          plantsMap[plant.id] = plant;
+        }
       });
       
       setPlants((prev) => ({ ...prev, ...plantsMap }));
@@ -160,8 +163,8 @@ export function PlantCareActivityHistory({
         <h3 className="text-lg font-medium">No care activities recorded</h3>
         <p className="text-sm text-muted-foreground mt-1">
           {plantId 
-            ? 'No care activities have been recorded for this plant yet.' 
-            : 'No care activities have been recorded for this grow yet.'}
+            ? "Record your first care activity to start tracking your plant's care history."
+            : "Record your first care activity to start tracking your grow's care history."}
         </p>
       </div>
     );
