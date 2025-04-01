@@ -255,6 +255,145 @@ export default function LandingPage() {
         )}
       </div>
 
+      {/* How It Works Section */}
+      <section className="py-24 bg-[#0A0F1C] relative z-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-white mb-4">Your Growing Space</h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">Streamline your cultivation with intelligent workspace management</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="space-y-6"
+            >
+              <div className="bg-[#1A1F2E] p-6 rounded-xl border border-gray-800">
+                <h3 className="text-2xl font-semibold text-white mb-4">Grows</h3>
+                <p className="text-gray-400">
+                Each Grow represents a dedicated space you've chosento track the full lifecycle of your plants. From seed to harvest, this is where you manage everything happening in a specific run.
+                Create multiple Grows to organize your grows by strain, method, or timeline, perfect for comparing outcomes or managing different setups side-by-side. You can:
+                </p>
+                <ul className="mt-4 space-y-2">
+                  <li className="text-gray-400 flex items-start">
+                    <span className="text-[#2563EB] mr-2">•</span>
+                    Customize zones for different growth stages
+                  </li>
+                  <li className="text-gray-400 flex items-start">
+                    <span className="text-[#2563EB] mr-2">•</span>
+                    Group plants by purpose or environment
+                  </li>
+                  <li className="text-gray-400 flex items-start">
+                    <span className="text-[#2563EB] mr-2">•</span>
+                    Track environmental metrics per zone
+                  </li>
+                  <li className="text-gray-400 flex items-start">
+                    <span className="text-[#2563EB] mr-2">•</span>
+                    Manage cultivation cycles independently
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="bg-[#1A1F2E] p-6 rounded-xl border border-gray-800">
+                <h3 className="text-2xl font-semibold text-white mb-4">Advanced Cultivation Tools</h3>
+                <p className="text-gray-400">
+                  Specialized features for cultivators include:
+                </p>
+                <ul className="mt-4 space-y-2">
+                  <li className="text-gray-400 flex items-start">
+                    <span className="text-[#2563EB] mr-2">•</span>
+                    Comprehensive genetic lineage tracking
+                  </li>
+                  <li className="text-gray-400 flex items-start">
+                    <span className="text-[#2563EB] mr-2">•</span>
+                    Detailed trait and outcome documentation
+                  </li>
+                  <li className="text-gray-400 flex items-start">
+                    <span className="text-[#2563EB] mr-2">•</span>
+                    Development milestone tracking
+                  </li>
+                  <li className="text-gray-400 flex items-start">
+                    <span className="text-[#2563EB] mr-2">•</span>
+                    Comprehensive variety profiles
+                  </li>
+                </ul>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="relative mx-auto md:mx-0 -left-12 md:left-0"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="max-w-[80%] mx-auto md:mx-0"
+              >
+                <img
+                  src="/assets/dashboard-preview.png"
+                  alt="Dashboard Preview"
+                  className="w-full shadow-2xl rounded-xl"
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4 }}
+                className="absolute -bottom-12 -right-12 w-64"
+              >
+                <img
+                  src="/assets/grow-log-preview.png"
+                  alt="Grow Log Preview"
+                  className="w-full shadow-2xl rounded-xl"
+                />
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Us Section */}
+      <section className="py-24 bg-[#0A0F1C] relative z-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl font-bold text-white mb-4">Our Vision</h2>
+              <div className="space-y-6 text-gray-400">
+                <p className="text-lg">
+                  At Yield GT, we're transforming cultivation management through innovative technology. 
+                  Our platform brings together advanced tracking capabilities and intuitive design to 
+                  help cultivators achieve exceptional results.
+                </p>
+                <p className="text-lg">
+                  From seed to harvest, our comprehensive system captures vital metrics, environmental data, 
+                  and resource allocation. We believe in empowering cultivators with data-driven insights 
+                  to optimize their operations and achieve consistent success.
+                </p>
+                <p className="text-lg">
+                  Whether you're an independent grower or managing large-scale operations, our platform 
+                  adapts to your needs. We've developed specialized tools for genetic preservation, 
+                  trait analysis, and outcome documentation to support your cultivation goals.
+                </p>
+                <p className="text-lg">
+                  Built by cultivators for cultivators, Yield GT combines horticultural expertise with 
+                  cutting-edge technology to deliver a platform that evolves with the industry's needs.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="py-24 bg-[#0A0F1C] relative z-20 mt-[-1px]">
         <div className="container mx-auto px-4">
