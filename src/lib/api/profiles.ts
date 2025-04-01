@@ -12,7 +12,7 @@ const AVATARS_BUCKET = 'avatars';
 
 export class ProfilesService extends APIClient {
   async getProfile(userId: string): Promise<Profile | null> {
-    console.log(`Fetching profile for user: ${userId}`);
+    console.log(`ProfilesService: Fetching profile for user: ${userId}`);
     
     // Use maybeSingle instead of single to avoid the PGRST116 error
     const { data, error } = await supabase
@@ -22,14 +22,18 @@ export class ProfilesService extends APIClient {
       .maybeSingle();
       
     if (error) {
-      console.error('Error fetching profile:', error);
+      console.error('ProfilesService: Error fetching profile:', error);
       throw error;
     }
     
+    console.log('ProfilesService: Profile fetch result:', data);
     return data;
   }
 
   async updateProfile(userId: string, update: ProfileUpdate): Promise<Profile> {
+    console.log('ProfilesService: Updating profile for user:', userId);
+    console.log('ProfilesService: Update data:', update);
+    
     const { data, error } = await supabase
       .from('profiles')
       .update(update)
@@ -37,27 +41,38 @@ export class ProfilesService extends APIClient {
       .select('*')
       .single();
       
-    if (error) throw error;
+    if (error) {
+      console.error('ProfilesService: Error updating profile:', error);
+      throw error;
+    }
+    
+    console.log('ProfilesService: Profile update result:', data);
     return data;
   }
 
   async getCurrentProfile(): Promise<Profile> {
+    console.log('ProfilesService: Getting current profile');
     const session = await this.requireAuth();
+    console.log('ProfilesService: Current session:', session);
     
     // First try to get the existing profile
     const profile = await this.getProfile(session.user.id);
     
     // If profile exists, return it
-    if (profile) return profile;
+    if (profile) {
+      console.log('ProfilesService: Found existing profile:', profile);
+      return profile;
+    }
     
     // If no profile found, create one
-    console.log('Profile not found, creating a new one...');
+    console.log('ProfilesService: Profile not found, creating a new one...');
     try {
       const newProfile = await this.initializeProfile(session.user.id, session.user.email || '');
+      console.log('ProfilesService: Created new profile:', newProfile);
       toast.success('Profile created successfully');
       return newProfile;
     } catch (createError) {
-      console.error('Error creating profile:', createError);
+      console.error('ProfilesService: Error creating profile:', createError);
       throw createError;
     }
   }
@@ -126,7 +141,8 @@ export class ProfilesService extends APIClient {
   }
 
   private async initializeProfile(userId: string, email: string): Promise<Profile> {
-    console.log(`Creating new profile for user ${userId} with email ${email}`);
+    console.log(`ProfilesService: Initializing new profile for user ${userId} with email ${email}`);
+    
     const { data, error } = await supabase
       .from('profiles')
       .insert({
@@ -140,9 +156,11 @@ export class ProfilesService extends APIClient {
       .single();
       
     if (error) {
-      console.error('Error initializing profile:', error);
+      console.error('ProfilesService: Error initializing profile:', error);
       throw error;
     }
+    
+    console.log('ProfilesService: Profile initialization result:', data);
     return data;
   }
 }

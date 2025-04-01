@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from 'uuid';
 // Define the bucket name for plant photos
 const PLANT_PHOTOS_BUCKET = 'plant-photos';
 
+// Flag to track if we've already checked the bucket
+let bucketChecked = false;
+
 export interface PhotoMetadata {
   id: string;
   plantId: string;
@@ -21,12 +24,17 @@ export class StorageService extends APIClient {
    * Note: Bucket creation requires admin privileges and should be done in the Supabase dashboard
    */
   async initialize(): Promise<void> {
+    // Only check bucket once to avoid excessive API calls
+    if (bucketChecked) return;
+
     try {
       // Check if the bucket exists
       const { data: buckets, error } = await supabase.storage.listBuckets();
       
       if (error) {
         console.error('Error listing buckets:', error.message);
+        // Mark as checked even if there was an error to prevent retries
+        bucketChecked = true;
         return;
       }
       
@@ -38,8 +46,13 @@ export class StorageService extends APIClient {
       } else {
         console.log(`Storage bucket '${PLANT_PHOTOS_BUCKET}' exists and is ready to use.`);
       }
+      
+      // Mark as checked to prevent future calls
+      bucketChecked = true;
     } catch (error) {
       console.error('Failed to check storage buckets:', error);
+      // Mark as checked even if there was an error to prevent retries
+      bucketChecked = true;
     }
   }
 

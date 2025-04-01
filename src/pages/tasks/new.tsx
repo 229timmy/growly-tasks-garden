@@ -12,7 +12,7 @@ export default function NewTask() {
   const queryClient = useQueryClient();
   
   const createMutation = useMutation({
-    mutationFn: (data: any) => tasksService.createTask(data),
+    mutationFn: (data: any) => tasksService.addTask(data),
     onSuccess: () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["tasks"] });

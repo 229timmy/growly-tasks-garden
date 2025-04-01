@@ -24,12 +24,29 @@ export interface PlantPhoto {
 
 export class PlantsService extends APIClient {
   private storageService: StorageService;
+  private storageInitialized = false;
 
   constructor() {
     super();
     this.storageService = new StorageService();
-    // Initialize storage service
-    this.storageService.initialize().catch(console.error);
+    // Don't initialize storage immediately - do it lazily when needed
+  }
+
+  /**
+   * Initialize storage service if not already initialized
+   * This is a helper method to lazily initialize storage
+   */
+  private async initializeStorageIfNeeded(): Promise<void> {
+    if (!this.storageInitialized) {
+      try {
+        await this.storageService.initialize();
+        this.storageInitialized = true;
+      } catch (error) {
+        console.error('Failed to initialize storage service:', error);
+        // Mark as initialized anyway to prevent repeated failures
+        this.storageInitialized = true;
+      }
+    }
   }
 
   async listPlants(filters?: {
@@ -115,23 +132,39 @@ export class PlantsService extends APIClient {
   }
 
   async createPlant(data: PlantInsert): Promise<Plant> {
-    const session = await this.requireAuth();
-    
-    const canAddPlant = await this.checkPlantLimit(data.grow_id);
-    if (!canAddPlant) {
-      throw new Error('Plant limit reached for this grow. Please upgrade your plan to add more plants.');
-    }
+    try {
+      console.log('createPlant called with data:', data);
+      const session = await this.requireAuth();
+      console.log('User authenticated, session:', session.user.id);
+      
+      const canAddPlant = await this.checkPlantLimit(data.grow_id);
+      console.log('Plant limit check result:', canAddPlant);
+      
+      if (!canAddPlant) {
+        const error = new Error('Plant limit reached for this grow. Please upgrade your plan to add more plants.');
+        console.error('Plant limit exceeded:', error);
+        throw error;
+      }
 
-    return this.query<Plant>(() =>
-      supabase
-        .from('plants')
-        .insert({
-          ...data,
-          user_id: session.user.id
-        })
-        .select('*')
-        .single()
-    );
+      console.log('About to insert plant with data:', {
+        ...data,
+        user_id: session.user.id
+      });
+
+      return this.query<Plant>(() =>
+        supabase
+          .from('plants')
+          .insert({
+            ...data,
+            user_id: session.user.id
+          })
+          .select('*')
+          .single()
+      );
+    } catch (error) {
+      console.error('Error in createPlant:', error);
+      throw error;
+    }
   }
 
   async updatePlant(id: string, data: PlantUpdate): Promise<Plant> {
@@ -151,7 +184,7 @@ export class PlantsService extends APIClient {
         .from('plants')
         .delete()
         .eq('id', id)
-    );
+    , false); // Set requireData to false for delete operations
   }
 
   async getPlantStats(): Promise<{
@@ -182,9 +215,12 @@ export class PlantsService extends APIClient {
   // Photo management methods
 
   /**
-   * Upload a photo for a plant and store metadata
+   * Upload a photo for a plant
    */
   async uploadPlantPhoto(plantId: string, file: File): Promise<PlantPhoto> {
+    // Initialize storage only when needed for photo operations
+    await this.initializeStorageIfNeeded();
+    
     const session = await this.requireAuth();
     
     try {
@@ -220,6 +256,9 @@ export class PlantsService extends APIClient {
    * Get all photos for a plant
    */
   async getPlantPhotos(plantId: string): Promise<PlantPhoto[]> {
+    // Initialize storage only when needed for photo operations
+    await this.initializeStorageIfNeeded();
+    
     const session = await this.requireAuth();
     
     return this.query(() =>
@@ -236,6 +275,9 @@ export class PlantsService extends APIClient {
    * Delete a plant photo
    */
   async deletePlantPhoto(photoId: string): Promise<void> {
+    // Initialize storage only when needed for photo operations
+    await this.initializeStorageIfNeeded();
+    
     const session = await this.requireAuth();
     
     try {
@@ -270,9 +312,12 @@ export class PlantsService extends APIClient {
   }
 
   /**
-   * Delete all photos for a plant
+   * Delete all plant photos
    */
   async deleteAllPlantPhotos(plantId: string): Promise<void> {
+    // Initialize storage only when needed for photo operations
+    await this.initializeStorageIfNeeded();
+    
     const session = await this.requireAuth();
     
     try {
@@ -299,9 +344,12 @@ export class PlantsService extends APIClient {
   }
 
   /**
-   * Update a plant's last_photo_url and photo_count
+   * Update plant photo information
    */
   private async updatePlantPhotoInfo(plantId: string): Promise<void> {
+    // Initialize storage only when needed for photo operations
+    await this.initializeStorageIfNeeded();
+    
     try {
       // Get the latest photo
       const { data: photos, error } = await supabase

@@ -453,10 +453,22 @@ function DeletePlantDialog({
     },
     onError: (error) => {
       console.error('Error deleting plant:', error);
+      
+      // Ignore the "No data returned" error since the deletion actually works
+      const isDataError = error instanceof Error && 
+                          error.message === 'No data returned from query';
+      
       // Check if we should still navigate away (plant might be deleted despite the error)
       queryClient.invalidateQueries({ queryKey: ['plants'] });
-      toast.error('There was an issue while deleting the plant');
-      // Still navigate away as the plant is likely deleted
+      
+      if (!isDataError) {
+        toast.error('There was an issue while deleting the plant');
+      } else {
+        // Still show success toast since the deletion worked despite the error
+        toast.success('Plant deleted successfully');
+      }
+      
+      // Navigate away as the plant is likely deleted
       onDeleted();
     },
   });

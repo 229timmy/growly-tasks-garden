@@ -18,10 +18,11 @@ async function checkTables() {
   }
 
   console.log('\nChecking specific customer...')
+  const customerId = process.env.TEST_CUSTOMER_ID || 'CUSTOMER_ID_NOT_SET'
   const { data: specificCustomer, error: specificError } = await supabase
     .from('stripe_customers')
     .select('*')
-    .eq('stripe_customer_id', 'cus_Rzgi15VrMb801e')
+    .eq('stripe_customer_id', customerId)
     .single()
 
   if (specificError) {

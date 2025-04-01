@@ -6,6 +6,10 @@ import { SignUpForm } from '@/components/auth/SignUpForm';
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
 import Layout from '@/components/layout/Layout';
 import LandingPage from '@/pages/landing';
+import PrivacyPolicy from '@/pages/legal/privacy';
+import TermsOfService from '@/pages/legal/terms';
+import CookiePolicy from '@/pages/legal/cookies';
+import Disclaimer from '@/pages/legal/disclaimer';
 import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
@@ -35,49 +39,69 @@ function AppContent() {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Only start checking for notifications when user is authenticated
     if (user) {
       notificationChecker.start().catch(console.error);
     } else {
       notificationChecker.stop();
     }
     
-    // Clean up when the component unmounts
     return () => {
       notificationChecker.stop();
     };
-  }, [user]); // Re-run effect when user auth state changes
+  }, [user]);
 
   return (
-    <Router>
+    <Router basename="/">
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUpForm />} />
-        <Route path="/reset-password" element={<ResetPasswordForm />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route path="signup" element={<SignUpForm />} />
+        <Route path="reset-password" element={<ResetPasswordForm />} />
+        
+        {/* Legal Pages */}
+        <Route path="privacy" element={<PrivacyPolicy />} />
+        <Route path="terms" element={<TermsOfService />} />
+        <Route path="cookies" element={<CookiePolicy />} />
+        <Route path="disclaimer" element={<Disclaimer />} />
         
         {/* Protected Routes */}
-        <Route path="/app" element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<Navigate to="/app/dashboard" replace />} />
+        <Route path="app" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          {/* Free tier routes */}
+          <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="grows" element={<Grows />} />
           <Route path="grows/:id" element={<GrowDetails />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="tasks/new" element={<NewTask />} />
           <Route path="plants" element={<Plants />} />
-          <Route path="plants/new" element={<NewPlant />} />
           <Route path="plants/:id" element={<PlantDetail />} />
-          <Route path="plants/:id/edit" element={<EditPlant />} />
-          <Route path="harvests" element={<Harvests />} />
-          <Route path="analytics" element={<Analytics />} />
+          <Route path="plants/new" element={<NewPlant />} />
+          <Route path="plants/edit/:id" element={<EditPlant />} />
           <Route path="settings" element={<Settings />} />
           <Route path="help" element={<Help />} />
+
+          {/* Premium tier routes */}
+          <Route 
+            path="analytics" 
+            element={
+              <ProtectedRoute requiredTier="premium">
+                <Analytics />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="harvests" 
+            element={
+              <ProtectedRoute requiredTier="premium">
+                <Harvests />
+              </ProtectedRoute>
+            } 
+          />
         </Route>
+
+        {/* Catch-all route */}
+        <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
       </Routes>
       <Toaster />
     </Router>

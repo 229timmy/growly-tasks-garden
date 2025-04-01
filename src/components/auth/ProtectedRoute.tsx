@@ -1,17 +1,19 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
+import { useUserTier } from '@/hooks/use-user-tier';
 import type { UserTier } from '@/types/common';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   requiredTier?: UserTier;
 }
 
 export function ProtectedRoute({ children, requiredTier = 'free' }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
+  const { hasRequiredTier, isLoading: tierLoading } = useUserTier();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || tierLoading) {
     // TODO: Add loading spinner component
     return <div>Loading...</div>;
   }
@@ -21,11 +23,18 @@ export function ProtectedRoute({ children, requiredTier = 'free' }: ProtectedRou
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // TODO: Implement tier checking logic
-  // const userTier = getUserTier(user);
-  // if (!hasRequiredTier(userTier, requiredTier)) {
-  //   return <Navigate to="/upgrade" state={{ from: location }} replace />;
-  // }
+  if (!hasRequiredTier(requiredTier)) {
+    // Redirect to subscription page with return URL
+    return <Navigate 
+      to="/settings?tab=subscription" 
+      state={{ 
+        from: location,
+        upgradeRequired: true,
+        requiredTier: requiredTier 
+      }} 
+      replace 
+    />;
+  }
 
-  return <>{children}</>;
+  return children || <Outlet />;
 } 

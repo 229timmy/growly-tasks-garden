@@ -22,6 +22,7 @@ import { StripeService } from '@/lib/api/stripe';
 import { supabase } from '@/lib/supabase';
 import { GrowsService } from '@/lib/api/grows';
 import { PlantsService } from '@/lib/api/plants';
+import { TierChecker } from '@/components/TierChecker';
 
 const profilesService = new ProfilesService();
 const stripeService = new StripeService();
@@ -45,12 +46,30 @@ export default function Settings() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [currentGrowCount, setCurrentGrowCount] = useState(0);
   const [currentMaxPlants, setCurrentMaxPlants] = useState(0);
+  const [activeTab, setActiveTab] = useState('profile');
   const [notificationPreferences, setNotificationPreferences] = useState(() => {
     const saved = localStorage.getItem(NOTIFICATION_PREFERENCES_KEY);
     return saved ? JSON.parse(saved) : DEFAULT_NOTIFICATION_PREFERENCES;
   });
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Handle upgrade redirects
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    const upgradeRequired = location.state?.upgradeRequired;
+    const requiredTier = location.state?.requiredTier;
+
+    if (tab) {
+      setActiveTab(tab);
+    }
+
+    if (upgradeRequired && requiredTier) {
+      toast.error(`This feature requires the ${requiredTier} plan`);
+      setActiveTab('subscription');
+    }
+  }, [location]);
 
   // Fetch user profile and usage stats
   const { data: profile, isLoading } = useQuery({
@@ -294,7 +313,7 @@ export default function Settings() {
           Manage your account settings and preferences.
         </p>
       </div>
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
@@ -480,185 +499,194 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="subscription">
-          <Card>
-            <CardHeader>
-              <CardTitle>Subscription Details</CardTitle>
-              <CardDescription>
-                View and manage your subscription plan
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                  <div>
-                    <h3 className="text-xl font-semibold capitalize mb-1">{tier} Plan</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {tier === 'free' && 'Basic features for hobbyists and beginners'}
-                      {tier === 'premium' && 'Advanced features for serious growers'}
-                      {tier === 'enterprise' && 'Full features for professional operations'}
-                    </p>
-                  </div>
-                  {tier === 'free' && (
-                    <Button asChild onClick={() => handleUpgradeClick('premium')}>
-                      <Link to="#">Upgrade Plan</Link>
-                    </Button>
-                  )}
-                </div>
+        <TabsContent value="subscription" className="space-y-6">
+          <h2 className="text-2xl font-bold">Subscription</h2>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Subscription Details</CardTitle>
+                  <CardDescription>
+                    View and manage your subscription plan
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                      <div>
+                        <h3 className="text-xl font-semibold capitalize mb-1">{tier} Plan</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {tier === 'free' && 'Basic features for hobbyists and beginners'}
+                          {tier === 'premium' && 'Advanced features for serious growers'}
+                          {tier === 'enterprise' && 'Full features for professional operations'}
+                        </p>
+                      </div>
+                      {tier === 'free' && (
+                        <Button asChild onClick={() => handleUpgradeClick('premium')}>
+                          <Link to="#">Upgrade Plan</Link>
+                        </Button>
+                      )}
+                    </div>
 
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold">Your Plan Features:</h4>
-                  <ul className="space-y-3">
-                    {tier === 'free' && (
-                      <>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          1 active grow
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          4 plants per grow
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Basic tracking
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Limited task management
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Standard measurements
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Community support
-                        </li>
-                      </>
-                    )}
-                    {tier === 'premium' && (
-                      <>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          4 active grows
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          6 plants per grow
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Advanced tracking
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Full task management
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Batch measurements
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Environmental alerts
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Priority support
-                        </li>
-                      </>
-                    )}
-                    {tier === 'enterprise' && (
-                      <>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          10 active grows
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          20 plants per grow
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Custom features
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          White labeling
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          API access
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Dedicated support
-                        </li>
-                        <li className="flex items-center text-sm">
-                          <Check className="h-4 w-4 text-green-500 mr-2" />
-                          Advanced analytics
-                        </li>
-                      </>
-                    )}
-                  </ul>
-                </div>
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-semibold">Your Plan Features:</h4>
+                      <ul className="space-y-3">
+                        {tier === 'free' && (
+                          <>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              1 active grow
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              4 plants per grow
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Basic tracking
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Limited task management
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Standard measurements
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Community support
+                            </li>
+                          </>
+                        )}
+                        {tier === 'premium' && (
+                          <>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              4 active grows
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              6 plants per grow
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Advanced tracking
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Full task management
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Batch measurements
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Environmental alerts
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Priority support
+                            </li>
+                          </>
+                        )}
+                        {tier === 'enterprise' && (
+                          <>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              10 active grows
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              20 plants per grow
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Custom features
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              White labeling
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              API access
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Dedicated support
+                            </li>
+                            <li className="flex items-center text-sm">
+                              <Check className="h-4 w-4 text-green-500 mr-2" />
+                              Advanced analytics
+                            </li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
 
-                {tier !== 'free' && (
-                  <div className="pt-4 border-t">
-                    <h4 className="text-sm font-semibold mb-2">Subscription Management</h4>
-                    <div className="flex flex-wrap gap-4">
-                      <Button variant="outline" onClick={handleManageBilling}>
-                        Manage Billing
-                      </Button>
-                      {tier === 'premium' && (
-                        <>
+                    {tier !== 'free' && (
+                      <div className="pt-4 border-t">
+                        <h4 className="text-sm font-semibold mb-2">Subscription Management</h4>
+                        <div className="flex flex-wrap gap-4">
+                          <Button variant="outline" onClick={handleManageBilling}>
+                            Manage Billing
+                          </Button>
+                          {tier === 'premium' && (
+                            <>
+                              <Button 
+                                variant="outline" 
+                                onClick={() => handleUpgradeClick('enterprise')}
+                              >
+                                Upgrade to Enterprise
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                className="text-yellow-600 hover:text-yellow-700"
+                                onClick={() => handleUpgradeClick('free')}
+                              >
+                                Downgrade to Free
+                              </Button>
+                            </>
+                          )}
+                          {tier === 'enterprise' && (
+                            <>
+                              <Button 
+                                variant="outline"
+                                className="text-yellow-600 hover:text-yellow-700"
+                                onClick={() => handleUpgradeClick('premium')}
+                              >
+                                Downgrade to Premium
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                className="text-yellow-600 hover:text-yellow-700"
+                                onClick={() => handleUpgradeClick('free')}
+                              >
+                                Downgrade to Free
+                              </Button>
+                            </>
+                          )}
                           <Button 
                             variant="outline" 
-                            onClick={() => handleUpgradeClick('enterprise')}
+                            className="text-destructive"
+                            onClick={handleManageBilling}
                           >
-                            Upgrade to Enterprise
+                            Cancel Subscription
                           </Button>
-                          <Button 
-                            variant="outline"
-                            className="text-yellow-600 hover:text-yellow-700"
-                            onClick={() => handleUpgradeClick('free')}
-                          >
-                            Downgrade to Free
-                          </Button>
-                        </>
-                      )}
-                      {tier === 'enterprise' && (
-                        <>
-                          <Button 
-                            variant="outline"
-                            className="text-yellow-600 hover:text-yellow-700"
-                            onClick={() => handleUpgradeClick('premium')}
-                          >
-                            Downgrade to Premium
-                          </Button>
-                          <Button 
-                            variant="outline"
-                            className="text-yellow-600 hover:text-yellow-700"
-                            onClick={() => handleUpgradeClick('free')}
-                          >
-                            Downgrade to Free
-                          </Button>
-                        </>
-                      )}
-                      <Button 
-                        variant="outline" 
-                        className="text-destructive"
-                        onClick={handleManageBilling}
-                      >
-                        Cancel Subscription
-                      </Button>
-                    </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="mt-8">
+              <TierChecker />
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
