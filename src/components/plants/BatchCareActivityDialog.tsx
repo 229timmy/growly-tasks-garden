@@ -48,7 +48,8 @@ export function BatchCareActivityDialog({
   onSuccess,
 }: BatchCareActivityDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingPlants, setIsLoadingPlants] = useState(true);
+  const [isLoadingPlants, setIsLoadingPlants] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlantIds, setSelectedPlantIds] = useState<string[]>([]);
   const [activityType, setActivityType] = useState<'watering' | 'feeding' | 'top_dressing' | 'other'>('watering');
@@ -58,33 +59,44 @@ export function BatchCareActivityDialog({
   const [notes, setNotes] = useState<string>('');
   const [performedAt, setPerformedAt] = useState<Date>(new Date());
   const [selectAll, setSelectAll] = useState(false);
-  const { canUseBatchMeasurements } = useUserTier();
+  const { canUseBatchMeasurements, tier, isLoading: tierLoading } = useUserTier();
+  const [internalOpen, setInternalOpen] = useState(false);
 
-  // Don't render anything if user can't use batch features
-  if (!canUseBatchMeasurements()) {
-    return null;
-  }
+  // Determine if the component is being used in controlled or uncontrolled mode
+  const isControlled = open !== undefined && onOpenChange !== undefined;
+  const isDialogOpen = isControlled ? open : internalOpen;
+  const setIsDialogOpen = isControlled 
+    ? onOpenChange 
+    : setInternalOpen;
 
-  // Load plants for the grow
+  // Load plants when the dialog opens
   useEffect(() => {
-    const loadPlants = async () => {
-      setIsLoadingPlants(true);
-      try {
-        const plantsService = new PlantsService();
-        const fetchedPlants = await plantsService.listPlants({ growId });
-        setPlants(fetchedPlants);
-      } catch (error) {
-        console.error('Failed to load plants:', error);
-        toast.error('Failed to load plants');
-      } finally {
-        setIsLoadingPlants(false);
-      }
-    };
-    
-    if (growId) {
-      loadPlants();
+    // Attempt to load plants when the dialog opens
+    if (isDialogOpen && !isLoadingPlants && !loadError && plants.length === 0) {
+      loadPlantsForGrow();
     }
-  }, [growId]);
+  }, [isDialogOpen, isLoadingPlants, loadError, plants.length]);
+
+  // Function to load plants
+  const loadPlantsForGrow = async () => {
+    if (!canUseBatchMeasurements() || !growId || tierLoading) {
+      return;
+    }
+    
+    setIsLoadingPlants(true);
+    setLoadError(null);
+    
+    try {
+      const plantsService = new PlantsService();
+      const fetchedPlants = await plantsService.listPlants({ growId });
+      setPlants(fetchedPlants);
+    } catch (error) {
+      setLoadError('Failed to load plants. Please try again.');
+      toast.error('Failed to load plants');
+    } finally {
+      setIsLoadingPlants(false);
+    }
+  };
 
   // Handle select all checkbox
   const handleSelectAll = (checked: boolean) => {
@@ -114,6 +126,21 @@ export function BatchCareActivityDialog({
       setSelectAll(false);
     }
   }, [selectedPlantIds, plants]);
+
+  // Reset form when dialog is closed
+  useEffect(() => {
+    if (!isDialogOpen) {
+      // Reset form state when dialog is closed
+      setSelectedPlantIds([]);
+      setSelectAll(false);
+      setAmount('');
+      setUnit('');
+      setProductName('');
+      setNotes('');
+      setPerformedAt(new Date());
+      setActivityType('watering');
+    }
+  }, [isDialogOpen]);
 
   // Handle form submission
   const handleSubmit = async () => {
@@ -196,9 +223,9 @@ export function BatchCareActivityDialog({
       if (onSuccess) {
         onSuccess();
       }
-      if (onOpenChange) {
-        onOpenChange(false);
-      }
+      
+      // Close dialog
+      setIsDialogOpen(false);
     } catch (error) {
       console.error('Failed to record batch activities:', error);
       toast.error('Failed to record batch activities');
@@ -206,8 +233,6 @@ export function BatchCareActivityDialog({
       setIsSubmitting(false);
     }
   };
-
-  const isControlled = open !== undefined && onOpenChange !== undefined;
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -235,9 +260,18 @@ export function BatchCareActivityDialog({
         return 'Plant Care Activity';
     }
   };
+  
+  // Don't render anything if user can't use batch features or tier is still loading
+  if (tierLoading) {
+    return null;
+  }
+  
+  if (!canUseBatchMeasurements()) {
+    return null;
+  }
 
   return (
-    <Dialog open={isControlled ? open : undefined} onOpenChange={isControlled ? onOpenChange : undefined}>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full sm:w-auto">Batch Care Activities</Button>
       </DialogTrigger>
@@ -266,8 +300,30 @@ export function BatchCareActivityDialog({
             
             {isLoadingPlants ? (
               <div className="text-center py-4">Loading plants...</div>
+            ) : loadError ? (
+              <div className="text-center py-4 text-destructive">
+                {loadError}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-2"
+                  onClick={loadPlantsForGrow}
+                >
+                  Retry
+                </Button>
+              </div>
             ) : plants.length === 0 ? (
-              <div className="text-center py-4">No plants found in this grow</div>
+              <div className="text-center py-4">
+                No plants found in this grow
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-2"
+                  onClick={loadPlantsForGrow}
+                >
+                  Reload
+                </Button>
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto border rounded-md p-2">
                 {plants.map(plant => (

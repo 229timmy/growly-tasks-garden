@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Check } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { PlantMeasurementForm } from './PlantMeasurementForm';
 import { useUserTier } from '@/hooks/use-user-tier';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PlantsService } from '@/lib/api/plants';
+import { toast } from 'sonner';
 import type { Plant } from '@/types/common';
 
 interface BatchMeasurementDialogProps {
@@ -22,40 +23,67 @@ export function BatchMeasurementDialog({
   onOpenChange,
   onSuccess
 }: BatchMeasurementDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const { canUseBatchMeasurements } = useUserTier();
+  const [internalOpen, setInternalOpen] = useState(false);
+  const { canUseBatchMeasurements, tier, isLoading: tierLoading } = useUserTier();
   const [plants, setPlants] = useState<Plant[]>([]);
   const [selectedPlants, setSelectedPlants] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
-  // Don't render anything if user can't use batch measurements
+  // Determine if the component is being used in controlled or uncontrolled mode
+  const isControlled = open !== undefined && onOpenChange !== undefined;
+  const isDialogOpen = isControlled ? open : internalOpen;
+  const setIsDialogOpen = isControlled 
+    ? onOpenChange 
+    : setInternalOpen;
+  
+  // Load plants when the dialog opens
+  useEffect(() => {
+    // Attempt to load plants when the dialog opens
+    if (isDialogOpen && !loading && !loadError && plants.length === 0) {
+      loadPlantsForGrow();
+    }
+  }, [isDialogOpen, loading, loadError, plants.length]);
+
+  // Function to load plants
+  const loadPlantsForGrow = async () => {
+    if (!canUseBatchMeasurements() || !growId || tierLoading) {
+      return;
+    }
+    
+    setLoading(true);
+    setLoadError(null);
+    
+    try {
+      const plantsService = new PlantsService();
+      const loadedPlants = await plantsService.listPlants({ growId });
+      setPlants(loadedPlants);
+    } catch (error) {
+      setLoadError('Failed to load plants. Please try again.');
+      toast.error('Failed to load plants');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset form when dialog is closed
+  useEffect(() => {
+    if (!isDialogOpen) {
+      // Reset form state when dialog is closed
+      setSelectedPlants([]);
+      setPlants([]);
+    }
+  }, [isDialogOpen]);
+
+  // If still loading tier info, show loading state
+  if (tierLoading) {
+    return null;
+  }
+
+  // Check if user can use batch measurements
   if (!canUseBatchMeasurements()) {
     return null;
   }
-  
-  // Use controlled state if provided, otherwise use internal state
-  const isDialogOpen = open !== undefined ? open : isOpen;
-  const setIsDialogOpen = onOpenChange || setIsOpen;
-
-  // Load plants when dialog opens
-  useEffect(() => {
-    const loadPlants = async () => {
-      if (isDialogOpen) {
-        setLoading(true);
-        try {
-          const plantsService = new PlantsService();
-          const loadedPlants = await plantsService.listPlants({ growId });
-          setPlants(loadedPlants);
-        } catch (error) {
-          console.error('Failed to load plants:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadPlants();
-  }, [isDialogOpen, growId]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -99,7 +127,7 @@ export function BatchMeasurementDialog({
             <div className="flex items-center space-x-2 py-2">
               <Checkbox 
                 id="select-all"
-                checked={selectedPlants.length === plants.length}
+                checked={selectedPlants.length === plants.length && plants.length > 0}
                 onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
               />
               <label htmlFor="select-all" className="text-sm font-medium">
@@ -108,18 +136,46 @@ export function BatchMeasurementDialog({
             </div>
             
             <div className="grid grid-cols-1 gap-2 bg-muted/50 rounded-lg p-2">
-              {plants.map((plant) => (
-                <div key={plant.id} className="flex items-center space-x-2 p-2 bg-background rounded">
-                  <Checkbox
-                    id={`plant-${plant.id}`}
-                    checked={selectedPlants.includes(plant.id)}
-                    onCheckedChange={(checked) => handlePlantSelection(plant.id, checked as boolean)}
-                  />
-                  <label htmlFor={`plant-${plant.id}`} className="text-sm">
-                    {plant.name || `Plant ${plant.id}`}
-                  </label>
+              {loading ? (
+                <div className="p-4 text-center">Loading plants...</div>
+              ) : loadError ? (
+                <div className="p-4 text-center text-destructive">
+                  {loadError}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-2"
+                    onClick={loadPlantsForGrow}
+                  >
+                    Retry
+                  </Button>
                 </div>
-              ))}
+              ) : plants.length === 0 ? (
+                <div className="p-4 text-center">
+                  No plants found for this grow.
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-2"
+                    onClick={loadPlantsForGrow}
+                  >
+                    Reload
+                  </Button>
+                </div>
+              ) : (
+                plants.map((plant) => (
+                  <div key={plant.id} className="flex items-center space-x-2 p-2 bg-background rounded">
+                    <Checkbox
+                      id={`plant-${plant.id}`}
+                      checked={selectedPlants.includes(plant.id)}
+                      onCheckedChange={(checked) => handlePlantSelection(plant.id, checked as boolean)}
+                    />
+                    <label htmlFor={`plant-${plant.id}`} className="text-sm">
+                      {plant.name || `Plant ${plant.id}`}
+                    </label>
+                  </div>
+                ))
+              )}
             </div>
 
             {selectedPlants.length > 0 && (
