@@ -420,8 +420,12 @@ export default function GrowDetails() {
           <CardTitle>Plants</CardTitle>
           <div className="flex flex-wrap gap-2">
             <BatchMeasurementDialog growId={id as string} />
-            <Button onClick={() => setCreatePlantOpen(true)} className="w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button 
+              onClick={() => setCreatePlantOpen(true)} 
+              className="w-full sm:w-auto"
+              size="sm"
+            >
+              <Plus className="w-3 h-3 mr-2" />
               Add Plant
             </Button>
           </div>

@@ -120,8 +120,8 @@ export function BatchMeasurementDialog({
     <>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button variant="outline" className="w-full sm:w-auto" size="sm">
+            <Plus className="h-3 w-3 mr-2" />
             Batch Measurements
           </Button>
         </DialogTrigger>

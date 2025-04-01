@@ -56,7 +56,8 @@ const Layout = ({ children }: { children?: React.ReactNode }) => {
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
         <main 
           className={cn(
-            "flex-1 p-6 overflow-auto",
+            "flex-1 overflow-auto",
+            "px-1 py-4 sm:px-6",
             isSidebarOpen ? "lg:ml-64" : "lg:ml-20",
             isTablet && isSidebarOpen ? "md:ml-64" : "md:ml-20",
             (!isTablet && !isMobile) || !isSidebarOpen ? "ml-0" : "ml-0"
