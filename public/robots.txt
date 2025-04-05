@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /disclaimer
+Disallow: /app/
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://yieldgt.com/sitemap.xml 
