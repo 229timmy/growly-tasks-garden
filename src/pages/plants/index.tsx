@@ -11,16 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { QueryErrorBoundary } from '@/components/ui/query-error-boundary';
 import { Loader2, Plus, Search, Filter } from 'lucide-react';
 import { CreatePlantDialog } from '@/components/plants/CreatePlantDialog';
+import { BatchCreatePlantDialog } from '@/components/plants/BatchCreatePlantDialog';
 import { PlantCard } from '@/components/plants/PlantCard';
 import { toast } from 'sonner';
+import { useUserTier } from '@/hooks/use-user-tier';
 
 const plantsService = new PlantsService();
 const growsService = new GrowsService();
 
 export default function Plants() {
   const [search, setSearch] = useState('');
-  const [selectedGrowId, setSelectedGrowId] = useState<string>('all');
+  const [selectedGrowId, setSelectedGrowId] = useState<'all' | string>('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [batchCreateDialogOpen, setBatchCreateDialogOpen] = useState(false);
+  const { hasRequiredTier } = useUserTier();
   
   return (
     <div className="space-y-6">
@@ -31,19 +35,28 @@ export default function Plants() {
             Monitor and track individual plants in your grows
           </p>
         </div>
-        <Button 
-          onClick={() => {
-            if (selectedGrowId === 'all') {
-              toast.error('Please select a grow first before adding a plant');
-            } else {
-              setCreateDialogOpen(true);
-            }
-          }}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add Plant</span>
-        </Button>
+        <div className="flex gap-2">
+          {hasRequiredTier('premium') && selectedGrowId !== 'all' && (
+            <BatchCreatePlantDialog
+              open={batchCreateDialogOpen}
+              onOpenChange={setBatchCreateDialogOpen}
+              growId={selectedGrowId}
+            />
+          )}
+          <Button 
+            onClick={() => {
+              if (selectedGrowId === 'all') {
+                toast.error('Please select a grow first before adding a plant');
+              } else {
+                setCreateDialogOpen(true);
+              }
+            }}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Plant</span>
+          </Button>
+        </div>
       </div>
       
       <div className="flex flex-col sm:flex-row gap-4">
@@ -91,11 +104,13 @@ export default function Plants() {
       </Tabs>
       
       {/* Create Plant Dialog - Always render it but only open when a grow is selected */}
-      <CreatePlantDialog
-        open={createDialogOpen && selectedGrowId !== 'all'}
-        onOpenChange={setCreateDialogOpen}
-        growId={selectedGrowId !== 'all' ? selectedGrowId : ''}
-      />
+      {selectedGrowId !== 'all' && (
+        <CreatePlantDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          growId={selectedGrowId}
+        />
+      )}
     </div>
   );
 }
@@ -173,7 +188,7 @@ function PlantsGrid({
   
   // Filter plants by search term
   const filteredPlants = plants?.filter(plant => 
-    plant.name.toLowerCase().includes(search.toLowerCase()) ||
+    (plant.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (plant.strain?.toLowerCase() || '').includes(search.toLowerCase())
   );
   
@@ -258,7 +273,7 @@ function PlantsGrid({
         ))}
       </div>
       
-      {growId && (
+      {growId && typeof growId === 'string' && (
         <>
           <div className="mt-6 flex justify-center">
             <Button onClick={() => setCreateDialogOpen(true)}>

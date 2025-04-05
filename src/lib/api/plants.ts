@@ -421,4 +421,45 @@ export class PlantsService extends APIClient {
       return null;
     }
   }
+
+  async createBatchPlants(plants: Omit<PlantInsert, 'user_id'>[]): Promise<Plant[]> {
+    try {
+      console.log('createBatchPlants called with data:', plants);
+      const session = await this.requireAuth();
+      console.log('User authenticated, session:', session.user.id);
+      
+      // Check if user has premium/enterprise tier
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tier')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (!profile || !['premium', 'enterprise'].includes(profile.tier)) {
+        throw new Error('Batch plant creation requires Premium or Enterprise tier');
+      }
+
+      // Check plant limit for the grow
+      const canAddPlants = await this.checkPlantLimit(plants[0].grow_id);
+      if (!canAddPlants) {
+        throw new Error('Plant limit reached for this grow. Please upgrade your plan to add more plants.');
+      }
+
+      // Add user_id to each plant
+      const plantsWithUser = plants.map(plant => ({
+        ...plant,
+        user_id: session.user.id
+      }));
+
+      return this.query<Plant[]>(() =>
+        supabase
+          .from('plants')
+          .insert(plantsWithUser)
+          .select('*')
+      );
+    } catch (error) {
+      console.error('Error in createBatchPlants:', error);
+      throw error;
+    }
+  }
 } 
