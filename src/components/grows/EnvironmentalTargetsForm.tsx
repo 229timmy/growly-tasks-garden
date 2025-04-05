@@ -104,12 +104,10 @@ export function EnvironmentalTargetsForm({
                   id="targetTempLow"
                   type="number"
                   step="0.5"
-                  min="10"
-                  max="35"
+                  min="0"
                   {...register('targetTempLow', {
                     required: 'Minimum temperature is required',
-                    min: { value: 10, message: 'Minimum temperature is 10°C' },
-                    max: { value: 35, message: 'Maximum temperature is 35°C' }
+                    min: { value: 0, message: 'Minimum temperature cannot be negative' }
                   })}
                   onChange={(e) => setValue('targetTempLow', parseFloat(e.target.value))}
                 />
@@ -123,12 +121,12 @@ export function EnvironmentalTargetsForm({
                   id="targetTempHigh"
                   type="number"
                   step="0.5"
-                  min="15"
-                  max="40"
+                  min="0"
                   {...register('targetTempHigh', {
                     required: 'Maximum temperature is required',
-                    min: { value: 15, message: 'Minimum temperature is 15°C' },
-                    max: { value: 40, message: 'Maximum temperature is 40°C' }
+                    min: { value: 0, message: 'Maximum temperature cannot be negative' },
+                    validate: (value) => 
+                      value > targetTempLow || 'Maximum temperature must be higher than minimum temperature'
                   })}
                   onChange={(e) => setValue('targetTempHigh', parseFloat(e.target.value))}
                 />

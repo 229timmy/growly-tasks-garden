@@ -74,16 +74,16 @@ export function EnvironmentalDataForm({ growId, onSuccess }: EnvironmentalDataFo
             </div>
             <Slider
               id="temperature"
-              min={10}
-              max={40}
+              min={0}
+              max={100}
               step={0.5}
               value={[temperature]}
               onValueChange={(value) => setValue('temperature', value[0])}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>10°C</span>
-              <span>25°C</span>
-              <span>40°C</span>
+              <span>0°C</span>
+              <span>50°C</span>
+              <span>100°C</span>
             </div>
             {errors.temperature && (
               <p className="text-sm text-destructive">{errors.temperature.message}</p>
@@ -123,12 +123,10 @@ export function EnvironmentalDataForm({ growId, onSuccess }: EnvironmentalDataFo
                 id="temperature-input"
                 type="number"
                 step="0.1"
-                min="10"
-                max="40"
+                min="0"
                 {...register('temperature', {
                   required: 'Temperature is required',
-                  min: { value: 10, message: 'Minimum temperature is 10°C' },
-                  max: { value: 40, message: 'Maximum temperature is 40°C' }
+                  min: { value: 0, message: 'Temperature cannot be negative' }
                 })}
                 onChange={(e) => setValue('temperature', parseFloat(e.target.value))}
               />
