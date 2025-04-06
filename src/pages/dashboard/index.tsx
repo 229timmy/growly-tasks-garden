@@ -39,6 +39,22 @@ export default function Dashboard() {
     queryFn: () => tasksService.listTasks(),
   });
 
+  // Fetch photos for all active grows at once
+  const { data: growPhotos } = useQuery({
+    queryKey: ['grow-photos', grows?.filter(grow => grow.stage !== 'completed')?.map(g => g.id)],
+    queryFn: async () => {
+      if (!grows?.filter(grow => grow.stage !== 'completed')?.length) return {};
+      const photos = await Promise.all(
+        grows.filter(grow => grow.stage !== 'completed').map(async (grow) => {
+          const url = await growsService.getLatestGrowPhoto(grow.id);
+          return [grow.id, url];
+        })
+      );
+      return Object.fromEntries(photos);
+    },
+    enabled: !!grows?.filter(grow => grow.stage !== 'completed')?.length,
+  });
+
   // Prepare data for display
   const activeGrows = grows?.filter(grow => grow.stage !== 'completed') || [];
   const activeTasks = tasks?.filter(task => !task.is_completed) || [];
@@ -192,11 +208,8 @@ export default function Dashboard() {
                 // Count plants in this grow
                 const growPlantCount = plants?.filter(p => p.grow_id === grow.id)?.length || 0;
 
-                // Get latest photo URL
-                const { data: photoUrl } = useQuery({
-                  queryKey: ['grow-photo', grow.id],
-                  queryFn: () => growsService.getLatestGrowPhoto(grow.id),
-                });
+                // Get photo URL from the pre-fetched photos
+                const photoUrl = growPhotos?.[grow.id];
 
                 // Get latest environmental data
                 const temp = grow.target_temp_high || 0;
