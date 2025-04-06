@@ -16,6 +16,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/hooks/use-theme';
 import { AuthProvider, useAuth } from '@/contexts/auth/AuthContext';
 import { NotificationChecker } from '@/lib/services/notification-checker';
+import { HelmetProvider } from 'react-helmet-async';
 
 // Pages
 import Dashboard from '@/pages/dashboard';
@@ -31,6 +32,8 @@ import Analytics from '@/pages/analytics';
 import Settings from '@/pages/settings';
 import Help from '@/pages/help';
 import Harvests from '@/pages/harvests';
+import BlogPage from '@/pages/blog';
+import BlogPostPage from '@/pages/blog/[slug]';
 
 const queryClient = new QueryClient();
 const notificationChecker = new NotificationChecker();
@@ -40,14 +43,9 @@ function AppContent() {
 
   useEffect(() => {
     if (user) {
-      notificationChecker.start().catch(console.error);
-    } else {
-      notificationChecker.stop();
+      notificationChecker.start();
+      return () => notificationChecker.stop();
     }
-    
-    return () => {
-      notificationChecker.stop();
-    };
   }, [user]);
 
   return (
@@ -55,53 +53,41 @@ function AppContent() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="login" element={<LoginPage />} />
-        <Route path="signup" element={<SignUpForm />} />
-        <Route path="reset-password" element={<ResetPasswordForm />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpForm />} />
+        <Route path="/reset-password" element={<ResetPasswordForm />} />
         
         {/* Legal Pages */}
-        <Route path="privacy" element={<PrivacyPolicy />} />
-        <Route path="terms" element={<TermsOfService />} />
-        <Route path="cookies" element={<CookiePolicy />} />
-        <Route path="disclaimer" element={<Disclaimer />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/cookies" element={<CookiePolicy />} />
+        <Route path="/disclaimer" element={<Disclaimer />} />
         
-        {/* Protected Routes */}
-        <Route path="app" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          {/* Free tier routes */}
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="grows" element={<Grows />} />
-          <Route path="grows/:id" element={<GrowDetails />} />
-          <Route path="tasks" element={<Tasks />} />
-          <Route path="tasks/new" element={<NewTask />} />
-          <Route path="plants" element={<Plants />} />
-          <Route path="plants/:id" element={<PlantDetail />} />
-          <Route path="plants/new" element={<NewPlant />} />
-          <Route path="plants/edit/:id" element={<EditPlant />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="help" element={<Help />} />
+        {/* Blog Routes */}
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:slug" element={<BlogPostPage />} />
 
-          {/* Premium tier routes */}
-          <Route 
-            path="analytics" 
-            element={
-              <ProtectedRoute requiredTier="premium">
-                <Analytics />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="harvests" 
-            element={
-              <ProtectedRoute requiredTier="premium">
-                <Harvests />
-              </ProtectedRoute>
-            } 
-          />
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/app/dashboard" element={<Dashboard />} />
+            <Route path="/app/grows" element={<Grows />} />
+            <Route path="/app/grows/:id" element={<GrowDetails />} />
+            <Route path="/app/tasks" element={<Tasks />} />
+            <Route path="/app/tasks/new" element={<NewTask />} />
+            <Route path="/app/plants" element={<Plants />} />
+            <Route path="/app/plants/:id" element={<PlantDetail />} />
+            <Route path="/app/plants/new" element={<NewPlant />} />
+            <Route path="/app/plants/edit/:id" element={<EditPlant />} />
+            <Route path="/app/analytics" element={<Analytics />} />
+            <Route path="/app/settings" element={<Settings />} />
+            <Route path="/app/help" element={<Help />} />
+            <Route path="/app/harvests" element={<Harvests />} />
+          </Route>
         </Route>
 
-        {/* Catch-all route */}
-        <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       <Toaster />
     </Router>
@@ -110,13 +96,15 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 

@@ -97,8 +97,11 @@ export default function Analytics() {
       switch (type) {
         case 'growth':
           if (growthData) {
-            const exportData = growthData.map(d => ({
+            // Flatten all measurements from all grows into a single array
+            const allMeasurements = Object.values(growthData).flat();
+            const exportData = allMeasurements.map(d => ({
               date: new Date(d.date).toLocaleDateString(),
+              grow_name: d.growName,
               height_cm: d.height,
               growth_rate_cm_per_day: d.growthRate,
               health_score: d.healthScore,
@@ -212,21 +215,26 @@ export default function Analytics() {
                       </CardTitle>
                       <TrendingUp className={cn(
                         "h-4 w-4",
-                        (growthStats?.averageGrowthRate || 0) > 0 ? "text-green-500" : "text-red-500"
+                        Object.values(growthStats || {}).some(stats => stats.averageGrowthRate > 0) 
+                          ? "text-green-500" 
+                          : "text-red-500"
                       )} />
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        {growthStats?.averageGrowthRate ? 
-                          `${growthStats.averageGrowthRate.toFixed(1)}%` : 
+                        {growthStats ? 
+                          `${Object.values(growthStats)
+                            .reduce((acc, stats) => acc + stats.averageGrowthRate, 0)
+                            .toFixed(1)}%` : 
                           'No data'}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Average growth rate
                       </p>
-                      {growthStats?.totalMeasurements && (
+                      {growthStats && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Based on {growthStats.totalMeasurements} measurements
+                          Based on {Object.values(growthStats)
+                            .reduce((acc, stats) => acc + stats.totalMeasurements, 0)} measurements
                         </p>
                       )}
                     </CardContent>
@@ -367,7 +375,7 @@ export default function Analytics() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleExport('growth')}
-                    disabled={!growthData?.length}
+                    disabled={!growthData}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export Data

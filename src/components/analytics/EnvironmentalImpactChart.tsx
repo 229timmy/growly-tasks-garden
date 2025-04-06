@@ -54,12 +54,31 @@ export function EnvironmentalImpactChart({
         <div className="text-sm font-medium">
           {format(new Date(label), 'MMM d, yyyy h:mm a')}
         </div>
-        {payload.map((item: any, index: number) => (
-          <div key={index} className="text-xs">
-            <span style={{ color: item.color }}>{item.name}: </span>
-            {item.value.toFixed(2)} {item.unit}
-          </div>
-        ))}
+        {payload.map((item: any, index: number) => {
+          // Format the value based on its type
+          let formattedValue = 'N/A';
+          if (typeof item.value === 'number' && !isNaN(item.value)) {
+            formattedValue = item.value.toFixed(2);
+          } else if (Array.isArray(item.value)) {
+            // Handle range values (for optimal range areas)
+            formattedValue = item.value.map((v: number) => v.toFixed(2)).join(' - ');
+          }
+
+          // Get the appropriate unit based on the metric
+          let unit = '';
+          if (item.name.toLowerCase().includes('temperature')) unit = '°C';
+          else if (item.name.toLowerCase().includes('humidity')) unit = '%';
+          else if (item.name.toLowerCase().includes('light')) unit = 'lux';
+          else if (item.name.toLowerCase().includes('co2')) unit = 'ppm';
+          else if (item.name.toLowerCase().includes('vpd')) unit = 'kPa';
+
+          return (
+            <div key={index} className="text-xs">
+              <span style={{ color: item.color }}>{item.name}: </span>
+              {formattedValue} {unit}
+            </div>
+          );
+        })}
       </div>
     );
   };

@@ -247,10 +247,12 @@ export default function Help() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <h3 className="text-xl font-medium">Getting Started</h3>
+              <h2 className="text-xl font-medium">Getting Started</h2>
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="starting-first-grow">
-                  <AccordionTrigger>How do I start my first grow?</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">How do I start my first grow?</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground mb-2">
                       To start your first grow:
@@ -267,7 +269,9 @@ export default function Help() {
                 </AccordionItem>
                 
                 <AccordionItem value="adding-plants">
-                  <AccordionTrigger>How do I add plants to my grow?</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">How do I add plants to my grow?</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground mb-2">
                       You can add plants to an existing grow in two ways:
@@ -284,7 +288,9 @@ export default function Help() {
                 </AccordionItem>
                 
                 <AccordionItem value="tracking-progress">
-                  <AccordionTrigger>How do I track my plants' progress?</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">How do I track my plants' progress?</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground">
                       Track progress by regularly adding measurements and photos:
@@ -300,10 +306,12 @@ export default function Help() {
                 </AccordionItem>
               </Accordion>
               
-              <h3 className="text-xl font-medium mt-6">Account & Settings</h3>
+              <h2 className="text-xl font-medium mt-6">Account & Settings</h2>
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="change-profile">
-                  <AccordionTrigger>How do I change my profile information?</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">How do I change my profile information?</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground">
                       To update your profile:
@@ -318,7 +326,9 @@ export default function Help() {
                 </AccordionItem>
                 
                 <AccordionItem value="notifications">
-                  <AccordionTrigger>How do I manage notifications?</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">How do I manage notifications?</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground">
                       Manage notifications in Settings:
@@ -339,10 +349,12 @@ export default function Help() {
             </div>
             
             <div className="space-y-4">
-              <h3 className="text-xl font-medium">Features & Functionality</h3>
+              <h2 className="text-xl font-medium">Features & Functionality</h2>
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="environmental-data">
-                  <AccordionTrigger>How do I record environmental data?</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">How do I record environmental data?</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground">
                       Environmental data can be recorded from a grow's detail page:
@@ -361,7 +373,9 @@ export default function Help() {
                 </AccordionItem>
                 
                 <AccordionItem value="batch-care-activities">
-                  <AccordionTrigger>How do I record care activities for multiple plants at once?</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">How do I record care activities for multiple plants at once?</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground">
                       The batch care activity feature allows you to record the same care activity for multiple plants simultaneously:
@@ -383,7 +397,9 @@ export default function Help() {
                 </AccordionItem>
                 
                 <AccordionItem value="tasks-management">
-                  <AccordionTrigger>How do I manage recurring tasks?</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">How do I manage recurring tasks?</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground">
                       Create recurring tasks for regular maintenance:
@@ -404,7 +420,9 @@ export default function Help() {
                 </AccordionItem>
                 
                 <AccordionItem value="photo-documentation">
-                  <AccordionTrigger>How do I track plant growth with photos?</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">How do I track plant growth with photos?</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground">
                       Document your plants' development with photos:
@@ -423,10 +441,12 @@ export default function Help() {
                 </AccordionItem>
               </Accordion>
               
-              <h3 className="text-xl font-medium mt-6">Troubleshooting</h3>
+              <h2 className="text-xl font-medium mt-6">Troubleshooting</h2>
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="data-not-saving">
-                  <AccordionTrigger>My data isn't saving correctly</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">My data isn't saving correctly</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground">
                       If you're experiencing issues with data not saving:
@@ -446,7 +466,9 @@ export default function Help() {
                 </AccordionItem>
                 
                 <AccordionItem value="photos-upload">
-                  <AccordionTrigger>I can't upload photos</AccordionTrigger>
+                  <AccordionTrigger>
+                    <h3 className="text-base font-medium">I can't upload photos</h3>
+                  </AccordionTrigger>
                   <AccordionContent>
                     <p className="text-sm text-muted-foreground">
                       If you're having trouble uploading photos:
@@ -523,12 +545,12 @@ export default function Help() {
           </div>
           
           <div className="mt-8">
-            <h3 className="text-xl font-medium mb-4">Community Resources</h3>
+            <h2 className="text-xl font-medium mb-4">Community Resources</h2>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
+                  <CardTitle level={3} className="text-base flex items-center">
                     <Leaf className="h-4 w-4 mr-2 text-green-500" />
                     Growing Guides
                   </CardTitle>
@@ -548,7 +570,7 @@ export default function Help() {
               
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
+                  <CardTitle level={3} className="text-base flex items-center">
                     <MessageSquare className="h-4 w-4 mr-2 text-blue-500" />
                     Community Forum
                   </CardTitle>
@@ -568,7 +590,7 @@ export default function Help() {
               
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center">
+                  <CardTitle level={3} className="text-base flex items-center">
                     <Book className="h-4 w-4 mr-2 text-amber-500" />
                     Knowledge Base
                   </CardTitle>

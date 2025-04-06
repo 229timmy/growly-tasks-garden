@@ -191,6 +191,16 @@ export default function Dashboard() {
                 
                 // Count plants in this grow
                 const growPlantCount = plants?.filter(p => p.grow_id === grow.id)?.length || 0;
+
+                // Get latest photo URL
+                const { data: photoUrl } = useQuery({
+                  queryKey: ['grow-photo', grow.id],
+                  queryFn: () => growsService.getLatestGrowPhoto(grow.id),
+                });
+
+                // Get latest environmental data
+                const temp = grow.target_temp_high || 0;
+                const humidity = grow.target_humidity_high || 0;
                 
                 return (
                   <GrowCard
@@ -198,14 +208,14 @@ export default function Dashboard() {
                     id={grow.id}
                     name={grow.name}
                     stage={grow.stage as "seedling" | "vegetation" | "flowering" | "harvested"}
-                    startDate={startDate || ''}
+                    startDate={startDate}
                     daysActive={daysActive}
                     plantCount={growPlantCount}
-                    temperature={grow.target_temp_high || 0}
-                    humidity={grow.target_humidity_high || 0}
-                    lastUpdated={grow.updated_at || grow.created_at}
+                    temperature={temp}
+                    humidity={humidity}
+                    lastUpdated={grow.updated_at}
                     progress={calculateGrowProgress(startDate)}
-                    className={isMobile ? "scale-95" : ""}
+                    imageUrl={photoUrl || undefined}
                   />
                 );
               })}

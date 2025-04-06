@@ -141,7 +141,56 @@ export default {
         'elevated': '0 10px 30px -10px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
         'glass': '0 4px 24px 0 rgba(0, 0, 0, 0.05)',
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: 'none',
+            color: 'hsl(var(--foreground))',
+            hr: {
+              borderColor: 'hsl(var(--border))',
+              marginTop: '3em',
+              marginBottom: '3em'
+            },
+            'h1, h2, h3, h4': {
+              color: 'hsl(var(--foreground))',
+              'scroll-margin-top': '100px',
+            },
+            'code::before': {
+              content: '""'
+            },
+            'code::after': {
+              content: '""'
+            },
+            a: {
+              color: 'hsl(var(--primary))',
+              textDecoration: 'none',
+              fontWeight: '500',
+              '&:hover': {
+                textDecoration: 'underline',
+              },
+            },
+            pre: {
+              backgroundColor: 'hsl(var(--muted))',
+              color: 'hsl(var(--muted-foreground))',
+              borderRadius: '0.5rem',
+            },
+            code: {
+              color: 'hsl(var(--foreground))',
+              backgroundColor: 'hsl(var(--muted))',
+              padding: '0.2em 0.4em',
+              borderRadius: '0.25rem',
+              fontSize: '0.9em',
+            },
+            'ul > li::marker': {
+              color: 'hsl(var(--foreground))',
+            },
+          },
+        },
+      },
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/typography"),
+  ],
 } satisfies Config;

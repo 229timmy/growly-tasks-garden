@@ -11,17 +11,39 @@
       script-src 'self' https://js.stripe.com https://cdn.gpteng.co 'unsafe-inline';
       frame-src 'self' https://js.stripe.com https://hooks.stripe.com;
       connect-src 'self' https://api.stripe.com %VITE_SUPABASE_URL%;
-      img-src 'self' data: %VITE_SUPABASE_URL% https://ui-avatars.com;
+      img-src 'self' data: %VITE_SUPABASE_URL% https://ui-avatars.com https://i.postimg.cc;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com;
     ">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     
-    <title>Yield GT</title>
-    <meta name="description" content="Modern plant management and grow tracking application" />
-    <meta name="author" content="Yield GT" />
-    <meta property="og:image" content="/og-image.png" />
+    <!-- Preconnect to critical domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/assets/background.png" as="image" />
+    <link rel="preload" href="/assets/seed-character.png" as="image" />
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0A0F1C" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    
+    <!-- Default meta tags (will be overridden by SEO component) -->
+    <title>Yield GT - Professional Plant Management Software</title>
+    <meta name="description" content="Professional plant management and grow tracking platform. Monitor growth, track tasks, and optimize your cultivation process." />
+    
+    <!-- Social media meta tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Yield GT" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@yieldgt" />
+    
+    <!-- Verification tags -->
+    <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">

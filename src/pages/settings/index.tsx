@@ -22,7 +22,6 @@ import { StripeService } from '@/lib/api/stripe';
 import { supabase } from '@/lib/supabase';
 import { GrowsService } from '@/lib/api/grows';
 import { PlantsService } from '@/lib/api/plants';
-import { TierChecker } from '@/components/TierChecker';
 
 const profilesService = new ProfilesService();
 const stripeService = new StripeService();
@@ -681,10 +680,6 @@ export default function Settings() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
-            
-            <div className="mt-8">
-              <TierChecker />
             </div>
           </div>
         </TabsContent>

@@ -115,18 +115,29 @@ export function GrowthPerformanceChart({ data, className, minimal = false }: Gro
               year: 'numeric',
             })}
           </p>
-          {payload.map((entry: any) => (
-            <div key={entry.name} className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span>
-                {entry.name}: {entry.value.toFixed(1)}
-                {entry.name === 'Height' ? 'cm' : entry.name === 'Growth Rate' ? 'cm/day' : ''}
-              </span>
-            </div>
-          ))}
+          {payload.map((entry: any) => {
+            // Format the value based on its type and name
+            let formattedValue = '';
+            if (typeof entry.value === 'number' && !isNaN(entry.value)) {
+              formattedValue = entry.value.toFixed(1);
+              if (entry.name === 'Height') formattedValue += 'cm';
+              else if (entry.name === 'Growth Rate') formattedValue += 'cm/day';
+            } else {
+              formattedValue = 'N/A';
+            }
+
+            return (
+              <div key={entry.name} className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span>
+                  {entry.name}: {formattedValue}
+                </span>
+              </div>
+            );
+          })}
         </div>
       );
     }
