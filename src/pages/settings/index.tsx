@@ -259,6 +259,33 @@ export default function Settings() {
 
   // Add useEffect to handle successful checkout
   useEffect(() => {
+    const handleCheckoutSuccess = async (sessionId: string) => {
+      try {
+        const { tier } = await stripeService.handleSuccessfulCheckout(sessionId);
+        console.log('Subscription updated successfully:', { tier });
+        
+        // Invalidate all relevant queries
+        queryClient.invalidateQueries({ queryKey: ['user'] });
+        queryClient.invalidateQueries({ queryKey: ['userTier'] });
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        queryClient.invalidateQueries({ queryKey: ['subscription'] });
+        
+        // Force refetch the profile
+        queryClient.refetchQueries({ queryKey: ['profile'] });
+        queryClient.refetchQueries({ queryKey: ['userTier'] });
+        
+        toast.success(`Successfully upgraded to ${tier} plan!`);
+        
+        // Add a small delay before reload to ensure Supabase updates are complete
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } catch (error) {
+        console.error('Error updating subscription:', error);
+        toast.error('There was an issue updating your subscription. Please contact support if this persists.');
+      }
+    };
+
     const searchParams = new URLSearchParams(location.search);
     const sessionId = searchParams.get('session_id');
     const success = searchParams.get('success');
@@ -266,35 +293,11 @@ export default function Settings() {
     if (sessionId && success === 'true') {
       // Clear URL parameters
       navigate(location.pathname, { replace: true });
-
-      // Handle successful checkout
-      stripeService.handleSuccessfulCheckout(sessionId)
-        .then(({ tier }) => {
-          console.log('Subscription updated successfully:', { tier });
-          
-          // Invalidate all relevant queries
-          queryClient.invalidateQueries({ queryKey: ['user'] });
-          queryClient.invalidateQueries({ queryKey: ['userTier'] });
-          queryClient.invalidateQueries({ queryKey: ['profile'] });
-          queryClient.invalidateQueries({ queryKey: ['subscription'] });
-          
-          // Force refetch the profile
-          queryClient.refetchQueries({ queryKey: ['profile'] });
-          queryClient.refetchQueries({ queryKey: ['userTier'] });
-          
-          toast.success(`Successfully upgraded to ${tier} plan!`);
-          
-          // Add a small delay before reload to ensure Supabase updates are complete
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
-        })
-        .catch((error) => {
-          console.error('Error updating subscription:', error);
-          toast.error('There was an issue updating your subscription. Please contact support if this persists.');
-        });
+      handleCheckoutSuccess(sessionId);
     }
-  }, [location.search, navigate, queryClient]);
+
+    // No cleanup needed since we're using async/await
+  }, [location.pathname, navigate, queryClient]);
 
   if (isLoading) {
     return (

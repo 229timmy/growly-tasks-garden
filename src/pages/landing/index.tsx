@@ -149,13 +149,13 @@ export default function LandingPage() {
         {
           "@type": "Offer",
           "name": "Premium",
-          "price": "19",
+          "price": "9.99",
           "priceCurrency": "USD"
         },
         {
           "@type": "Offer",
           "name": "Enterprise",
-          "price": "49",
+          "price": "19.99",
           "priceCurrency": "USD"
         }
       ]
@@ -215,12 +215,12 @@ export default function LandingPage() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.8 }}
-                  className="seed-character-container absolute top-[10px] left-[-100px] z-50"
+                  className="seed-character-container absolute top-[10px] left-[-30px] z-50"
                 >
                   <img 
                     src="/assets/seed-character.png" 
                     alt="Growly Mascot" 
-                    className="seed-character-image w-[600px] h-auto"
+                    className="seed-character-image w-[500px] h-auto"
                   />
                 </motion.div>
               </div>
@@ -248,12 +248,15 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="absolute -left-[269px] top-[-200px] z-10 hidden md:block"
-                >
-                  <img 
-                    src="/assets/chart.png" 
-                    alt="Chart" 
-                    className="analytics-chart-image w-[300px] h-auto"
+                  className="absolute -left-[294px] top-[-200px] z-10 hidden md:block"
+          >
+              <video 
+                    src="/assets/phone-video.webm" 
+                autoPlay
+                    loop 
+                muted
+                playsInline
+                    className="analytics-chart-image w-[300px] h-auto rounded-lg"
                   />
                 </motion.div>
               </div>

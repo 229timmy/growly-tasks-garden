@@ -15,7 +15,7 @@ export class BlogService extends APIClient {
         *,
         author:author_id(id, name, avatar, bio),
         category:category_id(id, name, slug),
-        blog_posts_tags!inner(
+        blog_posts_tags(
           tag:tag_id(id, name, slug)
         )
       `)
@@ -57,7 +57,7 @@ export class BlogService extends APIClient {
         *,
         author:author_id(id, name, avatar, bio),
         category:category_id(id, name, slug),
-        blog_posts_tags!inner(
+        blog_posts_tags(
           tag:tag_id(id, name, slug)
         )
       `)
@@ -118,5 +118,43 @@ export class BlogService extends APIClient {
       coverImage: post.cover_image,
       tags: post.blog_posts_tags.map((pt: any) => pt.tag)
     }));
+  }
+
+  async updatePostCoverImage(slug: string, coverImage: string): Promise<void> {
+    const { error } = await supabase
+      .from('blog_posts')
+      .update({ cover_image: coverImage })
+      .eq('slug', slug);
+
+    if (error) throw error;
+  }
+
+  async updateBlogImages(): Promise<void> {
+    const updates = [
+      {
+        slug: 'minimalist-grow-setup-that-still-slaps',
+        coverImage: 'https://i.postimg.cc/Pr9hp2Kd/minimal-grow.png'
+      },
+      {
+        slug: 'advanced-plant-training-techniques',
+        coverImage: 'https://i.postimg.cc/HL8r8Qkq/sustainability.png'
+      },
+      {
+        slug: 'sustainable-growing-practices',
+        coverImage: 'https://i.postimg.cc/Fs5DW8FY/recycle-leaf.png'
+      },
+      {
+        slug: 'mastering-hydroponic-systems',
+        coverImage: 'https://i.postimg.cc/RCjDrqdV/20250405-0101-Plant-Roots-Close-Up-remix-01jr256vksf5rrmn7wtv6nx3tw.png'
+      },
+      {
+        slug: 'getting-started-with-plant-management',
+        coverImage: 'https://i.postimg.cc/m2YV0jh8/20250405-0128-Hemp-Management-Guide-remix-01jr26r000fdrssqj4j2kpaffs.png'
+      }
+    ];
+
+    for (const update of updates) {
+      await this.updatePostCoverImage(update.slug, update.coverImage);
+    }
   }
 } 
